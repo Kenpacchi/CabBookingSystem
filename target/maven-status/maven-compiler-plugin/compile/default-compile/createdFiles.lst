@@ -1,4 +1,7 @@
 com\TestSpringBoot\TestSpringBoot\api\UsersApiImpl.class
+com\TestSpringBoot\TestSpringBoot\service\UserServiceImpl.class
+com\TestSpringBoot\TestSpringBoot\model\entities\Location.class
 com\TestSpringBoot\TestSpringBoot\repository\UsersRepository.class
 com\TestSpringBoot\TestSpringBoot\SpringBootApplication.class
 com\TestSpringBoot\TestSpringBoot\model\entities\User.class
+com\TestSpringBoot\TestSpringBoot\model\entities\CabDriver.class

@@ -4,22 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1e98414c-53cc-4b49-a044-1cb8f044b55f" name="Changes" comment="first commit">
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/model/entities/CabDriver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/model/entities/Location.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/service/UserServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/SpringBootApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/SpringBootApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/api/UsersApiImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/api/UsersApiImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/model/entities/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/model/entities/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/repository/UsersRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/TestSpringBoot/repository/UsersRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/SpringBootApplication.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/SpringBootApplication.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/api/UsersApiImpl.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/api/UsersApiImpl.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/model/entities/User.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/model/entities/User.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/repository/UsersRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/repository/UsersRepository.class" afterDir="false" />
-    </list>
+    <list default="true" id="1e98414c-53cc-4b49-a044-1cb8f044b55f" name="Changes" comment="first commit" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

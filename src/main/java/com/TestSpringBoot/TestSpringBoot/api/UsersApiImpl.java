@@ -14,6 +14,7 @@ public class UsersApiImpl {
 
     @PostMapping("/addUser")
     String signUp(@RequestBody User user) {
+        System.out.println("Hello!");
         return userService.addUser(user);
     }
 }
