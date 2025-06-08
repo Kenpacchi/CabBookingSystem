@@ -1,10 +1,7 @@
 package com.TestSpringBoot.TestSpringBoot.model.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
@@ -18,12 +15,22 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "email")
     private String email;
 
-    @Column(nullable = false, unique = true)
-    private String mobile;
-
-    @Column(nullable = false)
+    @Column(name = "password")
     private String password;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "x", column = @Column(name = "x_coordinate")),
+            @AttributeOverride(name = "y", column = @Column(name = "y_coordinate"))
+    })
+    private Location userLocation;
 }
