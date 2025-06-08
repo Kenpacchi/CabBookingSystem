@@ -1,0 +1,4 @@
+com\TestSpringBoot\TestSpringBoot\api\UsersApiImpl.class
+com\TestSpringBoot\TestSpringBoot\repository\UsersRepository.class
+com\TestSpringBoot\TestSpringBoot\SpringBootApplication.class
+com\TestSpringBoot\TestSpringBoot\model\entities\User.class
