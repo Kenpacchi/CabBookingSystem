@@ -1,5 +1,6 @@
 package com.TestSpringBoot.cbs.model.entities;
 
+import com.TestSpringBoot.cbs.model.enums.FlagTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,8 +23,9 @@ public class BikeDriver {
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "is_available")
-    private Boolean isAvailable;
+    private FlagTypeEnum isAvailable;
 
     @Column
     private Boolean accept;
@@ -33,5 +35,9 @@ public class BikeDriver {
 
     @Column
     private Integer y;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id", insertable = false, updatable = false)
+    private Vehicle vehicle;
 }
 

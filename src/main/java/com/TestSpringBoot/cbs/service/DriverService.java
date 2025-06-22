@@ -4,6 +4,7 @@ import com.TestSpringBoot.cbs.model.entities.BikeDriver;
 import com.TestSpringBoot.cbs.model.entities.CabDriver;
 import com.TestSpringBoot.cbs.model.entities.ThreeWheelerDriver;
 import com.TestSpringBoot.cbs.model.entities.User;
+import com.TestSpringBoot.cbs.model.enums.FlagTypeEnum;
 import com.TestSpringBoot.cbs.repository.BikeDriverRepository;
 import com.TestSpringBoot.cbs.repository.CabDriverRepository;
 import com.TestSpringBoot.cbs.repository.ThreeWheelerDriverRepository;
@@ -24,7 +25,7 @@ public class DriverService {
 
     public List<CabDriver> getNearbyCabs(User user) {
         return cabRepo.findAll().stream()
-                .filter(CabDriver::getIsAvailable)
+                .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y)
                 .sorted(Comparator.comparingInt(
                         d -> Math.abs(user.getX() - d.getX()) + Math.abs(user.getY() - d.getY())))
                 .limit(20)
@@ -33,19 +34,20 @@ public class DriverService {
 
     public List<BikeDriver> getNearbyBikes(User user) {
         return bikeRepo.findAll().stream()
-                .filter(BikeDriver::getIsAvailable)
+                .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y)
                 .sorted(Comparator.comparingInt(
                         d -> Math.abs(user.getX() - d.getX()) + Math.abs(user.getY() - d.getY())))
-                .limit(10)
+                .limit(20)
                 .toList();
     }
 
     public List<ThreeWheelerDriver> getNearbyAutos(User user) {
         return autoRepo.findAll().stream()
-                .filter(ThreeWheelerDriver::getIsAvailable)
+                .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y)
                 .sorted(Comparator.comparingInt(
                         d -> Math.abs(user.getX() - d.getX()) + Math.abs(user.getY() - d.getY())))
-                .limit(10)
+                .limit(20)
                 .toList();
     }
+
 }
