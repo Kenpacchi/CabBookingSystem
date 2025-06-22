@@ -5,22 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1e98414c-53cc-4b49-a044-1cb8f044b55f" name="Changes" comment="sec commit">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/UserController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/dto/RideBookingResponse.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/BookingController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/BookingController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/BikeDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/BikeDriver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/CabDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/CabDriver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/ThreeWheelerDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/ThreeWheelerDriver.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/UserRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/UserRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/BookingService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/BookingService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/controller/BookingController$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/controller/BookingController$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/controller/BookingController.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/controller/BookingController.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/BikeDriver.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/BikeDriver.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/CabDriver.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/CabDriver.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/ThreeWheelerDriver.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/model/entities/ThreeWheelerDriver.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/repository/UserRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/repository/UserRepository.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/BookingService$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/BookingService$1.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/BookingService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/BookingService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/DriverService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/DriverService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.TestSpringBoot.cbs.SpringBootApplicationTests.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.TestSpringBoot.cbs.SpringBootApplicationTests.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/UserService.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/cbs/service/UserService.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.TestSpringBoot.cbs.SpringBootApplicationTests.xml" beforeDir="false" afterPath="$PROJECT_DIR$/target/surefire-reports/TEST-com.TestSpringBoot.cbs.SpringBootApplicationTests.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.TestSpringBoot.cbs.SpringBootApplicationTests.txt" beforeDir="false" afterPath="$PROJECT_DIR$/target/surefire-reports/com.TestSpringBoot.cbs.SpringBootApplicationTests.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +81,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "Application.SpringBootApplication.executor": "Run",
+    "Application.SpringBootApplication.executor": "Debug",
     "Application.TestSpringBootApplication.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -159,6 +168,82 @@
           <url>file://$PROJECT_DIR$/scripts/src/Main.java</url>
           <line>11</line>
           <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/AuthController.java</url>
+          <line>18</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/AuthController.java</url>
+          <line>23</line>
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>17</line>
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>21</line>
+          <option name="timeStamp" value="27" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>22</line>
+          <option name="timeStamp" value="28" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>23</line>
+          <option name="timeStamp" value="29" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>25</line>
+          <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>24</line>
+          <option name="timeStamp" value="31" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>26</line>
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java</url>
+          <line>18</line>
+          <option name="timeStamp" value="36" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java</url>
+          <line>26</line>
+          <option name="timeStamp" value="40" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java</url>
+          <line>28</line>
+          <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java</url>
+          <line>27</line>
+          <properties>
+            <option name="lambda-ordinal" value="0" />
+          </properties>
+          <option name="timeStamp" value="42" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java</url>
+          <line>29</line>
+          <properties>
+            <option name="lambda-ordinal" value="0" />
+          </properties>
+          <option name="timeStamp" value="43" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -1,6 +1,7 @@
 package com.TestSpringBoot.cbs.controller;
 
 import com.TestSpringBoot.cbs.model.dto.BookRideRequest;
+import com.TestSpringBoot.cbs.model.dto.RideBookingResponse;
 import com.TestSpringBoot.cbs.model.entities.User;
 import com.TestSpringBoot.cbs.model.enums.VehicleTypeEnum;
 import com.TestSpringBoot.cbs.service.BookingService;
@@ -23,7 +24,7 @@ public class BookingController {
     private UserService userService;
 
     @PostMapping("/book")
-    public String bookRide(@RequestBody BookRideRequest request) {
+    public RideBookingResponse bookRide(@RequestBody BookRideRequest request) {
         User user = userService.getUserByPhone(request.getPhoneNumber());
         return bookingService.bookRide(user, request.getDropLocation(), request.getVehicleType());
     }

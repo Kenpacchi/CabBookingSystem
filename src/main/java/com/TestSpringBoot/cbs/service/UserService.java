@@ -7,6 +7,7 @@ import com.TestSpringBoot.cbs.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 @Service
 public class UserService {
@@ -43,5 +44,14 @@ public class UserService {
     public User getUserByPhone(String phone) {
         return userRepository.findByPhoneNumber(phone)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public User getUserByMobileNumber(String mobileNumber){
+        return userRepository.findUserByPhoneNumber(mobileNumber);
+
     }
 }

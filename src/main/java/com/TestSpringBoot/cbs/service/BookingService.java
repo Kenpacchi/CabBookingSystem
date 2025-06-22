@@ -1,5 +1,6 @@
 package com.TestSpringBoot.cbs.service;
 import com.TestSpringBoot.cbs.model.dto.Location;
+import com.TestSpringBoot.cbs.model.dto.RideBookingResponse;
 import com.TestSpringBoot.cbs.model.entities.User;
 import com.TestSpringBoot.cbs.model.enums.FlagTypeEnum;
 import com.TestSpringBoot.cbs.model.enums.VehicleTypeEnum;
@@ -26,18 +27,24 @@ public class BookingService {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public String bookRide(User user, Location drop, VehicleTypeEnum vehicleType) {
-        int cost = (Math.abs(user.getX() - drop.getX()) + Math.abs(user.getY() - drop.getY())) * 10;
+    public RideBookingResponse bookRide(User user, Location drop, VehicleTypeEnum vehicleType) {
+        long cost = (Math.abs(user.getX() - drop.getX()) + Math.abs(user.getY() - drop.getY())) * 10L;
+        RideBookingResponse bookingResponse;
 
         return switch (vehicleType) {
             case CAB -> bookNearestCab(user, cost);
             case BIKE -> bookNearestBike(user, cost);
             case AUTO -> bookNearestAuto(user, cost);
-            default -> "Invalid vehicle type";
+            default -> {
+                bookingResponse = new RideBookingResponse();
+                bookingResponse.setMessage("Invalid vehicle type");
+                yield bookingResponse;
+            }
         };
     }
 
-    private String bookNearestCab(User user, int cost) {
+    private RideBookingResponse bookNearestCab(User user, long cost) {
+        long cabCost = 3 * cost;
         return cabRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept())).min(Comparator.comparingInt(d -> manhattan(user.getX(), user.getY(), d.getX(), d.getY())))
                 .map(d -> {
@@ -47,12 +54,18 @@ public class BookingService {
                         d.setIsAvailable(FlagTypeEnum.Y);
                         cabRepo.save(d);
                     });
-                    return "Cab booked: " + d.getName() + " | Fare: Rs. " + cost;
+                    RideBookingResponse bookingResponse = new RideBookingResponse();
+                    bookingResponse.setCost(cabCost);
+                    bookingResponse.setDriverName(d.getName());
+                    bookingResponse.setDriverMobileNumber(d.getMobileNumber());
+                    bookingResponse.setVehicleNumber(d.getVehicle().getVehicleNumber());
+                    bookingResponse.setMessage("SUCCESS!!");
+                    return bookingResponse;
                 })
-                .orElse("No available cab drivers right now");
+                .orElse(null);
     }
 
-    private String bookNearestBike(User user, int cost) {
+    private RideBookingResponse bookNearestBike(User user, long cost) {
         return bikeRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept())).min(Comparator.comparingInt(d -> manhattan(user.getX(), user.getY(), d.getX(), d.getY())))
                 .map(d -> {
@@ -62,12 +75,19 @@ public class BookingService {
                         d.setIsAvailable(FlagTypeEnum.Y);
                         bikeRepo.save(d);
                     });
-                    return "Driver Name: " + d.getName() + " | Vehicle Number: " + d.getVehicle().getVehicleNumber() + " | Fare: Rs. " + cost;
+                    RideBookingResponse bookingResponse = new RideBookingResponse();
+                    bookingResponse.setCost(cost);
+                    bookingResponse.setDriverName(d.getName());
+                    bookingResponse.setDriverMobileNumber(d.getMobileNumber());
+                    bookingResponse.setVehicleNumber(d.getVehicle().getVehicleNumber());
+                    bookingResponse.setMessage("SUCCESS!!");
+                    return bookingResponse;
                 })
-                .orElse("No available bike drivers right now");
+                .orElse(null);
     }
 
-    private String bookNearestAuto(User user, int cost) {
+    private RideBookingResponse bookNearestAuto(User user, long cost) {
+        long autoCost = cost * 2;
         return autoRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept())).min(Comparator.comparingInt(d -> manhattan(user.getX(), user.getY(), d.getX(), d.getY())))
                 .map(d -> {
@@ -77,9 +97,15 @@ public class BookingService {
                         d.setIsAvailable(FlagTypeEnum.Y);
                         autoRepo.save(d);
                     });
-                    return "Auto booked: " + d.getName() + " | Fare: Rs. " + cost;
+                    RideBookingResponse bookingResponse = new RideBookingResponse();
+                    bookingResponse.setCost(autoCost);
+                    bookingResponse.setDriverName(d.getName());
+                    bookingResponse.setDriverMobileNumber(d.getMobileNumber());
+                    bookingResponse.setVehicleNumber(d.getVehicle().getVehicleNumber());
+                    bookingResponse.setMessage("SUCCESS!!");
+                    return bookingResponse;
                 })
-                .orElse("No available auto drivers right now");
+                .orElse(null);
     }
 
     private int manhattan(int ux, int uy, int dx, int dy) {
@@ -87,6 +113,6 @@ public class BookingService {
     }
 
     private void scheduleDriverAvailable(Runnable task) {
-        scheduler.schedule(task, 20, TimeUnit.SECONDS); // or desired delay
+        scheduler.schedule(task, 10, TimeUnit.SECONDS); // or desired delay
     }
 }

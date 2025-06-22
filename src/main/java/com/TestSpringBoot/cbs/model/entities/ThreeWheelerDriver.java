@@ -1,6 +1,7 @@
 package com.TestSpringBoot.cbs.model.entities;
 
 import com.TestSpringBoot.cbs.model.enums.FlagTypeEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,5 +39,6 @@ public class ThreeWheelerDriver {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Vehicle vehicle;
 }
