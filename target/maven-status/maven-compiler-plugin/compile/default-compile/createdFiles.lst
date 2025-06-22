@@ -4,6 +4,7 @@ com\TestSpringBoot\cbs\model\entities\User.class
 com\TestSpringBoot\cbs\model\entities\ThreeWheelerDriver.class
 com\TestSpringBoot\cbs\service\UserService.class
 com\TestSpringBoot\cbs\controller\BookingController.class
+com\TestSpringBoot\cbs\model\entities\Vehicle.class
 com\TestSpringBoot\cbs\model\dto\SignupRequest.class
 com\TestSpringBoot\cbs\service\BookingService.class
 com\TestSpringBoot\cbs\model\entities\BikeDriver.class

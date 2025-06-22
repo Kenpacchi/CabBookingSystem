@@ -5,42 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1e98414c-53cc-4b49-a044-1cb8f044b55f" name="Changes" comment="sec commit">
-      <change afterPath="$PROJECT_DIR$/sql-script/ddl/bike_drivers.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql-script/ddl/cab_drivers.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql-script/ddl/three_wheeler_drivers.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/sql-script/ddl/users.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/AuthController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/controller/BookingController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/dto/BookRideRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/dto/Location.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/dto/LoginRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/dto/SignupRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/BikeDriver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/CabDriver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/ThreeWheelerDriver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/User.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/enums/FlagTypeEnum.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/enums/VehicleTypeEnum.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/BikeDriverRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/CabDriverRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/ThreeWheelerDriverRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/repository/UserRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/BookingService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/model/entities/Vehicle.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/cbs/cab-booking-system/SpringBootApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/SpringBootApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/cbs/cab-booking-system/SpringBootApplicationTests.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/TestSpringBoot/cbs/SpringBootApplicationTests.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/target/CabBookingManagementSystem-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/com/TestSpringBoot/TestSpringBoot/SpringBootApplication.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/createdFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/testCompile/default-testCompile/inputFiles.lst" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/TEST-com.TestSpringBoot.TestSpringBoot.SpringBootApplicationTests.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/surefire-reports/com.TestSpringBoot.TestSpringBoot.SpringBootApplicationTests.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/test-classes/com/TestSpringBoot/TestSpringBoot/SpringBootApplicationTests.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/DriverService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/TestSpringBoot/cbs/service/UserService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

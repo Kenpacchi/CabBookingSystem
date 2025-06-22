@@ -27,7 +27,7 @@ public class DriverService {
                 .filter(CabDriver::getIsAvailable)
                 .sorted(Comparator.comparingInt(
                         d -> Math.abs(user.getX() - d.getX()) + Math.abs(user.getY() - d.getY())))
-                .limit(10)
+                .limit(20)
                 .toList();
     }
 

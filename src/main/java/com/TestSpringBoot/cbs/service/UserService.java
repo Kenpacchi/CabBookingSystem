@@ -37,7 +37,6 @@ public class UserService {
         if (!user.getPassword().equals(request.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
-
         return user;
     }
 
