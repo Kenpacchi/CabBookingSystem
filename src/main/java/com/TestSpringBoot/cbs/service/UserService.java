@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+
 @Service
 public class UserService {
     @Autowired
@@ -19,6 +22,13 @@ public class UserService {
             throw new RuntimeException("User already exists");
         }
 
+        Set<Integer> existing = userRepository.findOtps();
+
+        int otp;
+        do {
+            otp = new Random().nextInt(9000) + 1000;
+        } while (existing.contains(otp));
+
         User user = new User();
         user.setName(request.getName());
         user.setPhoneNumber(request.getPhoneNumber());
@@ -26,6 +36,7 @@ public class UserService {
         user.setPassword(request.getPassword());
         user.setX(request.getX());
         user.setY(request.getY());
+        user.setOtp(otp);
 
         return userRepository.save(user);
     }

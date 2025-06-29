@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -20,4 +21,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "SELECT * FROM users WHERE phone_number = :mobileNumber", nativeQuery = true)
     User findUserByPhoneNumber(@Param("mobileNumber") String mobileNumber);
 
+    @Query(value = "SELECT DISTINCT u.otp FROM users u", nativeQuery = true)
+    Set<Integer> findOtps();
 }

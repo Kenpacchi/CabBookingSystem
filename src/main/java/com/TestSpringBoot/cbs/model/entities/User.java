@@ -1,5 +1,6 @@
 package com.TestSpringBoot.cbs.model.entities;
 
+import com.TestSpringBoot.cbs.model.enums.FlagTypeEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,6 +31,13 @@ public class User {
     @Column
     private Integer x;
 
-    @Column()
+    @Column
     private Integer y;
+
+    @Column
+    private Integer otp;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "is_riding")
+    private FlagTypeEnum isRiding;
 }

@@ -37,6 +37,9 @@ public class CabDriver {
     @Column
     private Integer y;
 
+    @Column(name = "user_otp")
+    private Integer userOtp;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", insertable = false, updatable = false)
     @JsonIgnore
