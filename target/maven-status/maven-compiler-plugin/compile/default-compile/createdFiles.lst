@@ -1,9 +1,13 @@
+com\TestSpringBoot\cbs\common\Methods.class
 com\TestSpringBoot\cbs\repository\CabDriverRepository.class
 com\TestSpringBoot\cbs\model\entities\CabDriver.class
 com\TestSpringBoot\cbs\model\entities\User.class
+com\TestSpringBoot\cbs\model\dto\OtpVerificationRequest.class
+com\TestSpringBoot\cbs\controller\OtpVerificationController.class
 com\TestSpringBoot\cbs\service\UserService.class
 com\TestSpringBoot\cbs\model\entities\Vehicle.class
 com\TestSpringBoot\cbs\model\dto\SignupRequest.class
+com\TestSpringBoot\cbs\controller\OtpVerificationController$1.class
 com\TestSpringBoot\cbs\model\enums\FlagTypeEnum.class
 com\TestSpringBoot\cbs\controller\BookingController$1.class
 com\TestSpringBoot\cbs\model\dto\BookRideRequest.class
@@ -20,6 +24,7 @@ com\TestSpringBoot\cbs\SpringBootApplication.class
 com\TestSpringBoot\cbs\repository\UserRepository.class
 com\TestSpringBoot\cbs\service\BookingService$1.class
 com\TestSpringBoot\cbs\controller\AuthController.class
+com\TestSpringBoot\cbs\common\Constants.class
 com\TestSpringBoot\cbs\model\dto\LoginRequest.class
 com\TestSpringBoot\cbs\model\enums\VehicleTypeEnum.class
 com\TestSpringBoot\cbs\repository\ThreeWheelerDriverRepository.class
