@@ -134,7 +134,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge);
+                            distanceKm, fare, surge, history.getId());
                 })
                 .orElseGet(() -> errorResponse("No cab available nearby."));
     }
@@ -184,7 +184,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge);
+                            distanceKm, fare, surge, history.getId());
                 })
                 .orElseGet(() -> errorResponse("No bike available nearby."));
     }
@@ -234,7 +234,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge);
+                            distanceKm, fare, surge, history.getId());
                 })
                 .orElseGet(() -> errorResponse("No auto available nearby."));
     }
@@ -307,16 +307,18 @@ public class BookingService {
 
     private RideBookingResponse successResponse(String driverName, String driverPhone,
                                                 String vehicleNumber, double distanceKm,
-                                                double fare, double surge) {
+                                                double fare, double surge, Long rideId) {
         RideBookingResponse r = new RideBookingResponse();
         r.setMessage("Ride booked successfully!");
         r.setDriverName(driverName);
         r.setDriverMobileNumber(driverPhone);
+        r.setDriverPhone(driverPhone);
         r.setVehicleNumber(vehicleNumber);
         r.setDistanceKm(Math.round(distanceKm * 10.0) / 10.0);
         r.setFareAndCost((long) fare);
         r.setSurgeMultiplier(surge);
         r.setStatus("IN_PROGRESS");
+        r.setRideId(rideId);
         return r;
     }
 

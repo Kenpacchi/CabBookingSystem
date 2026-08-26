@@ -8,6 +8,8 @@ public class RideBookingResponse {
     private String message;
     private String driverName;
     private String driverMobileNumber;
+    /** Same value as driverMobileNumber — convenient alias for frontend */
+    private String driverPhone;
     private String vehicleNumber;
 
     /** Total fare (same as cost, renamed for frontend clarity) */

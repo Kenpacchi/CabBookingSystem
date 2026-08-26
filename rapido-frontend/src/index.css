@@ -6,28 +6,38 @@
 }
 
 :root {
-  --rapido-gold:        #FFD700;
-  --rapido-gold-dim:    rgba(255, 215, 0, 0.15);
-  --rapido-gold-border: rgba(255, 215, 0, 0.3);
-  --rapido-bg:          #0a0a0a;
-  --rapido-surface:     #111111;
-  --rapido-surface-2:   #1a1a1a;
-  --rapido-border:      rgba(255, 255, 255, 0.07);
-  --rapido-text:        #ffffff;
-  --rapido-text-muted:  rgba(255, 255, 255, 0.5);
-  --rapido-text-faint:  rgba(255, 255, 255, 0.25);
-  --rapido-green:       #4CAF50;
-  --rapido-red:         #FF5252;
-  --rapido-blue:        #4FC3F7;
-  --rapido-orange:      #FF9800;
-  --navbar-height:      56px;
-  --border-radius:      14px;
+  --bg:             #F5F7FA;   /* page background - light grey */
+  --surface:        #FFFFFF;   /* cards, panels */
+  --surface-2:      #F0F2F5;   /* secondary surfaces */
+  --border:         #E2E8F0;   /* borders */
+  --text:           #1A202C;   /* primary text */
+  --text-muted:     #718096;   /* secondary text */
+  --text-faint:     #A0AEC0;   /* placeholder text */
+  --primary:        #F59E0B;   /* amber/gold - brand color */
+  --primary-dark:   #D97706;   /* darker amber */
+  --primary-light:  #FEF3C7;   /* light amber bg */
+  --primary-border: #FCD34D;   /* amber border */
+  --green:          #059669;   /* success */
+  --green-light:    #D1FAE5;
+  --red:            #DC2626;   /* error */
+  --red-light:      #FEE2E2;
+  --blue:           #2563EB;   /* info */
+  --blue-light:     #DBEAFE;
+  --orange:         #EA580C;   /* warning */
+  --orange-light:   #FFEDD5;
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:      0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg:      0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
+  --navbar-height:  60px;
+  --radius:         12px;
+  --radius-lg:      16px;
+  --radius-xl:      20px;
 }
 
 html, body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--rapido-bg);
-  color: var(--rapido-text);
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
   height: 100%;
   overflow-x: hidden;
@@ -40,79 +50,85 @@ html, body {
 /* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 215, 0, 0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--primary-border); border-radius: 4px; }
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
-h1, h2, h3, h4 { letter-spacing: -0.3px; }
+h1, h2, h3, h4 { letter-spacing: -0.3px; color: var(--text); }
 
 /* ── Input resets ────────────────────────────────────────────────────────── */
 input, textarea, select {
   font-family: inherit;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid var(--rapido-border);
-  color: var(--rapido-text);
-  border-radius: var(--border-radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--rapido-gold-border);
-  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.08);
+  border-color: var(--primary-border);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.12);
 }
 
-input::placeholder { color: var(--rapido-text-faint); }
+input::placeholder { color: var(--text-faint); }
 
 /* ── Button base ─────────────────────────────────────────────────────────── */
 button { font-family: inherit; cursor: pointer; transition: all 0.2s; }
 button:active { transform: scale(0.97); }
 
 .btn-primary {
-  background: linear-gradient(135deg, #FFD700, #FFA000);
-  color: #111;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius);
   padding: 13px 24px;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 28px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 6px 28px rgba(245, 158, 11, 0.45);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.07);
-  color: white;
-  border: 1px solid var(--rapido-border);
-  border-radius: var(--border-radius);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 12px 22px;
   font-size: 14px;
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
-/* ── Leaflet map dark ────────────────────────────────────────────────────── */
+.btn-secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--primary-border);
+}
+
+/* ── Leaflet map light ───────────────────────────────────────────────────── */
 .leaflet-container {
-  background: #1a1a2e;
+  background: #e8eaf0;
 }
 
 /* Fix popup styling */
 .leaflet-popup-content-wrapper {
-  background: #1a1a1a !important;
-  color: white !important;
-  border: 1px solid rgba(255, 215, 0, 0.2) !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 10px !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
-.leaflet-popup-tip { background: #1a1a1a !important; }
+.leaflet-popup-tip { background: var(--surface) !important; }
 
-/* Hide default attribution for cleaner look */
+/* Attribution */
 .leaflet-control-attribution {
-  background: rgba(0,0,0,0.5) !important;
-  color: rgba(255,255,255,0.3) !important;
+  background: rgba(255,255,255,0.8) !important;
+  color: var(--text-faint) !important;
   font-size: 9px !important;
 }
 
@@ -121,54 +137,60 @@ button:active { transform: scale(0.97); }
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
-  background: rgba(10, 10, 10, 0.92);
+  background: var(--surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--rapido-border);
+  border-bottom: 1px solid var(--border);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .navbar-logo {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
-  color: var(--rapido-gold);
+  color: var(--primary);
   letter-spacing: -0.5px;
 }
 
 .navbar-logo span {
-  color: white;
+  color: var(--text);
   font-weight: 400;
 }
 
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .nav-link {
-  color: var(--rapido-text-muted);
+  color: var(--text-muted);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  padding: 7px 14px;
+  padding: 7px 12px;
   border-radius: 10px;
   transition: all 0.2s;
 }
 
-.nav-link:hover, .nav-link.active {
-  color: var(--rapido-gold);
-  background: var(--rapido-gold-dim);
+.nav-link:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.nav-link.active {
+  color: var(--primary);
+  background: var(--primary-light);
 }
 
 .nav-logout {
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--rapido-text-muted);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   border-radius: 10px;
   padding: 7px 14px;
   font-size: 13px;
@@ -176,19 +198,19 @@ button:active { transform: scale(0.97); }
 }
 
 .nav-logout:hover {
-  border-color: var(--rapido-red);
-  color: var(--rapido-red);
-  background: rgba(255, 82, 82, 0.06);
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-light);
 }
 
-/* ── Auth pages ──────────────────────────────────────────────────────────── */
+/* ── Auth pages (dark — leave LoginPage/SignupPage as-is) ─────────────────── */
 .auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: var(--rapido-bg);
+  background: #0a0a0a;
   position: relative;
   overflow: hidden;
 }
@@ -207,8 +229,8 @@ button:active { transform: scale(0.97); }
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background: var(--rapido-surface);
-  border: 1px solid var(--rapido-border);
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 24px;
   padding: 36px 32px;
   position: relative;
@@ -220,14 +242,14 @@ button:active { transform: scale(0.97); }
   text-align: center;
   font-size: 28px;
   font-weight: 800;
-  color: var(--rapido-gold);
+  color: #FFD700;
   letter-spacing: -1px;
   margin-bottom: 6px;
 }
 
 .auth-subtitle {
   text-align: center;
-  color: var(--rapido-text-muted);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   margin-bottom: 28px;
 }
@@ -240,7 +262,7 @@ button:active { transform: scale(0.97); }
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: var(--rapido-text-muted);
+  color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 6px;
@@ -250,7 +272,7 @@ button:active { transform: scale(0.97); }
   width: 100%;
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--rapido-border);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 12px;
   color: white;
   font-size: 14px;
@@ -258,27 +280,31 @@ button:active { transform: scale(0.97); }
 }
 
 .form-input:focus {
-  border-color: var(--rapido-gold-border);
+  border-color: rgba(255, 215, 0, 0.3);
   box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.08);
   background: rgba(255, 255, 255, 0.07);
 }
 
 .form-error {
-  color: var(--rapido-red);
+  color: #FF5252;
   font-size: 12px;
   margin-top: 4px;
 }
 
 /* ── Card component ──────────────────────────────────────────────────────── */
 .card {
-  background: var(--rapido-surface);
-  border: 1px solid var(--rapido-border);
-  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 16px;
-  transition: border-color 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-.card:hover { border-color: rgba(255, 215, 0, 0.15); }
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-border);
+}
 
 /* ── Badge ───────────────────────────────────────────────────────────────── */
 .badge {
@@ -291,11 +317,11 @@ button:active { transform: scale(0.97); }
   font-weight: 600;
 }
 
-.badge-gold    { background: rgba(255,215,0,0.12); color: var(--rapido-gold); }
-.badge-green   { background: rgba(76,175,80,0.12); color: var(--rapido-green); }
-.badge-red     { background: rgba(255,82,82,0.12); color: var(--rapido-red); }
-.badge-orange  { background: rgba(255,152,0,0.12); color: var(--rapido-orange); }
-.badge-blue    { background: rgba(79,195,247,0.12); color: var(--rapido-blue); }
+.badge-gold    { background: var(--primary-light); color: var(--primary-dark); }
+.badge-green   { background: var(--green-light);   color: var(--green); }
+.badge-red     { background: var(--red-light);     color: var(--red); }
+.badge-orange  { background: var(--orange-light);  color: var(--orange); }
+.badge-blue    { background: var(--blue-light);    color: var(--blue); }
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
 
@@ -315,7 +341,7 @@ button:active { transform: scale(0.97); }
 .dotLoader span {
   display: inline-block;
   width: 9px; height: 9px;
-  background: var(--rapido-gold);
+  background: var(--primary);
   border-radius: 50%;
   animation: dotBounce 1.4s ease-in-out infinite;
 }
@@ -336,14 +362,14 @@ button:active { transform: scale(0.97); }
 
 .fade-up { animation: fadeSlideUp 0.35s ease forwards; }
 
-/* Shimmer loading */
+/* Shimmer loading — light grey tones */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
 
 .shimmer {
-  background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  background: linear-gradient(90deg, #f0f2f5 0%, #e2e8f0 50%, #f0f2f5 100%);
   background-size: 400px 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -356,32 +382,32 @@ button:active { transform: scale(0.97); }
 
 /* Pulse glow for active ride */
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
-  50%       { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
+  0%, 100% { box-shadow: 0 0 8px rgba(5, 150, 105, 0.4); }
+  50%       { box-shadow: 0 0 20px rgba(5, 150, 105, 0.7); }
 }
 
 /* ── Ride history page ────────────────────────────────────────────────────── */
 .history-page {
   min-height: 100vh;
   padding: var(--navbar-height) 0 0;
-  background: var(--rapido-bg);
+  background: var(--bg);
 }
 
 .history-header {
   padding: 24px 20px 16px;
-  border-bottom: 1px solid var(--rapido-border);
+  border-bottom: 1px solid var(--border);
 }
 
 .history-title {
   font-size: 24px;
   font-weight: 800;
-  color: white;
+  color: var(--text);
   margin-bottom: 4px;
 }
 
 /* ── Login / signup link ─────────────────────────────────────────────────── */
 .auth-link {
-  color: var(--rapido-gold);
+  color: #FFD700;
   text-decoration: none;
   font-weight: 600;
 }
@@ -398,15 +424,15 @@ button:active { transform: scale(0.97); }
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--rapido-surface-2);
-  border: 1px solid var(--rapido-border);
-  color: white;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
   padding: 12px 24px;
   border-radius: 20px;
   font-size: 14px;
   z-index: 9999;
   animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: var(--shadow-lg);
   white-space: nowrap;
 }
 

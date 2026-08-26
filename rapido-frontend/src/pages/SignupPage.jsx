@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, saveAuthData } from '../services/api.js'
 import api from '../services/api.js'
+import PhoneInput from '../components/PhoneInput.jsx'
 
 // ── Load Google Identity Services SDK ────────────────────────────────────────
 function loadGoogleScript() {
@@ -31,164 +32,156 @@ const S = {
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    background: 'linear-gradient(160deg, var(--black) 0%, #0d0d1a 40%, #111827 100%)',
+    background: 'linear-gradient(160deg, #FFFBEB 0%, #F5F7FA 100%)',
     padding: '28px 16px 40px',
     fontFamily: 'var(--font)',
   },
   card: {
     width: '100%',
     maxWidth: '460px',
-    background: 'var(--card)',
-    border: '1px solid var(--border)',
+    background: '#FFFFFF',
+    border: '1px solid #E2E8F0',
     borderRadius: '24px',
     padding: '36px 32px 32px',
-    boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
     animation: 'slideUp 0.35s var(--ease) both',
   },
   logoSection: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' },
-  boltWrap: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    width: '52px', height: '52px', borderRadius: '50%', background: 'var(--yellow)',
-    boxShadow: '0 0 24px rgba(255,214,0,0.40)', flexShrink: 0,
-  },
-  boltEmoji: { fontSize: '26px', lineHeight: 1 },
   appName: {
-    display: 'block', fontSize: '24px', fontWeight: '900', color: 'var(--yellow)',
-    letterSpacing: '-0.3px', lineHeight: 1.1, textShadow: '0 0 18px rgba(255,214,0,0.30)',
+    display: 'block', fontSize: '24px', fontWeight: '900', color: '#D97706',
+    letterSpacing: '-0.3px', lineHeight: 1.1,
   },
-  tagline: { display: 'block', fontSize: '12px', color: 'var(--muted)', marginTop: '3px', letterSpacing: '0.4px' },
-  title: { fontSize: '20px', fontWeight: '700', color: 'var(--text)', marginBottom: '20px', marginTop: 0 },
+  tagline: { display: 'block', fontSize: '12px', color: '#718096', marginTop: '3px', letterSpacing: '0.4px' },
+  title: { fontSize: '20px', fontWeight: '700', color: '#1A202C', marginBottom: '20px', marginTop: 0 },
   formGroup: { marginBottom: '14px' },
   label: {
-    display: 'block', fontSize: '11.5px', fontWeight: '600', color: 'var(--muted)',
+    display: 'block', fontSize: '11.5px', fontWeight: '600', color: '#718096',
     letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '6px',
   },
   input: {
-    width: '100%', padding: '12px 15px', background: 'var(--dark)',
-    border: '1.5px solid var(--border)', borderRadius: '11px',
-    color: 'var(--text)', fontSize: '15px', outline: 'none',
+    width: '100%', padding: '12px 15px', background: '#FFFFFF',
+    border: '1.5px solid #E2E8F0', borderRadius: '11px',
+    color: '#1A202C', fontSize: '15px', outline: 'none',
     transition: 'border-color 0.18s, box-shadow 0.18s', boxSizing: 'border-box',
   },
   passwordWrap: { position: 'relative' },
   passwordInput: {
-    width: '100%', padding: '12px 46px 12px 15px', background: 'var(--dark)',
-    border: '1.5px solid var(--border)', borderRadius: '11px',
-    color: 'var(--text)', fontSize: '15px', outline: 'none',
+    width: '100%', padding: '12px 46px 12px 15px', background: '#FFFFFF',
+    border: '1.5px solid #E2E8F0', borderRadius: '11px',
+    color: '#1A202C', fontSize: '15px', outline: 'none',
     transition: 'border-color 0.18s, box-shadow 0.18s', boxSizing: 'border-box',
   },
   eyeBtn: {
     position: 'absolute', right: '11px', top: '50%', transform: 'translateY(-50%)',
     background: 'none', border: 'none', cursor: 'pointer', padding: '4px',
-    lineHeight: 1, fontSize: '17px', color: 'var(--muted)', transition: 'color 0.15s',
+    lineHeight: 1, fontSize: '17px', color: '#718096', transition: 'color 0.15s',
   },
   locationSection: {
     marginTop: '6px', marginBottom: '14px', padding: '16px',
-    background: 'rgba(255,214,0,0.04)', border: '1px solid rgba(255,214,0,0.14)', borderRadius: '14px',
+    background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '14px',
   },
   locationTitle: {
-    fontSize: '12px', fontWeight: '600', color: 'var(--muted)',
+    fontSize: '12px', fontWeight: '600', color: '#92400E',
     letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '10px',
   },
   detectBtn: {
-    width: '100%', padding: '11px 15px', background: 'rgba(255,214,0,0.10)',
-    border: '1.5px solid rgba(255,214,0,0.30)', borderRadius: '11px',
-    color: 'var(--yellow)', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+    width: '100%', padding: '11px 15px', background: 'rgba(245,158,11,0.1)',
+    border: '1.5px solid rgba(245,158,11,0.4)', borderRadius: '11px',
+    color: '#D97706', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
     transition: 'background 0.15s, border-color 0.15s', marginBottom: '10px',
   },
   detectBtnDisabled: { opacity: 0.55, cursor: 'not-allowed' },
   detectedBadge: {
     display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 12px',
-    background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.25)',
-    borderRadius: '9px', fontSize: '13px', color: 'var(--green)', fontWeight: '600', marginBottom: '10px',
+    background: '#D1FAE5', border: '1px solid #A7F3D0',
+    borderRadius: '9px', fontSize: '13px', color: '#065F46', fontWeight: '600', marginBottom: '10px',
   },
   coordRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
   coordLabel: {
-    display: 'block', fontSize: '11px', fontWeight: '600', color: 'var(--muted)',
+    display: 'block', fontSize: '11px', fontWeight: '600', color: '#718096',
     letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '5px',
   },
   coordInput: {
-    width: '100%', padding: '10px 12px', background: 'var(--dark)',
-    border: '1.5px solid var(--border)', borderRadius: '10px',
-    color: 'var(--text)', fontSize: '14px', outline: 'none',
+    width: '100%', padding: '10px 12px', background: '#FFFFFF',
+    border: '1.5px solid #E2E8F0', borderRadius: '10px',
+    color: '#1A202C', fontSize: '14px', outline: 'none',
     transition: 'border-color 0.18s, box-shadow 0.18s', boxSizing: 'border-box',
   },
-  coordHint: { fontSize: '11px', color: 'var(--muted)', marginTop: '6px', textAlign: 'center' },
+  coordHint: { fontSize: '11px', color: '#718096', marginTop: '6px', textAlign: 'center' },
   passwordMatch: {
-    fontSize: '12px', color: 'var(--green)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px',
+    fontSize: '12px', color: '#059669', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px',
   },
   passwordMismatch: {
-    fontSize: '12px', color: 'var(--red)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px',
+    fontSize: '12px', color: '#DC2626', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px',
   },
   errorBox: {
-    marginTop: '14px', padding: '11px 14px', background: 'rgba(239,68,68,0.12)',
-    border: '1px solid rgba(239,68,68,0.35)', borderRadius: '10px',
-    color: 'var(--red)', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px',
+    marginTop: '14px', padding: '11px 14px', background: '#FEE2E2',
+    border: '1px solid #FCA5A5', borderRadius: '10px',
+    color: '#DC2626', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px',
   },
   successBox: {
-    marginTop: '14px', padding: '11px 14px', background: 'rgba(34,197,94,0.10)',
-    border: '1px solid rgba(34,197,94,0.30)', borderRadius: '10px',
-    color: 'var(--green)', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px',
+    marginTop: '14px', padding: '11px 14px', background: '#D1FAE5',
+    border: '1px solid #A7F3D0', borderRadius: '10px',
+    color: '#065F46', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px',
   },
   submitBtn: {
-    marginTop: '20px', width: '100%', padding: '15px', background: 'var(--yellow)',
-    color: 'var(--black)', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '800',
+    marginTop: '20px', width: '100%', padding: '15px',
+    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    color: 'white', border: 'none', borderRadius: '14px', fontSize: '16px', fontWeight: '800',
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-    letterSpacing: '0.3px', boxShadow: '0 4px 20px rgba(255,214,0,0.35)', transition: 'opacity 0.15s, transform 0.15s',
+    letterSpacing: '0.3px', boxShadow: '0 4px 20px rgba(245,158,11,0.35)', transition: 'opacity 0.15s, transform 0.15s',
   },
   submitBtnDisabled: { opacity: 0.65, cursor: 'not-allowed' },
   spinner: {
-    width: '17px', height: '17px', border: '2.5px solid rgba(0,0,0,0.25)',
-    borderTopColor: 'var(--black)', borderRadius: '50%', display: 'inline-block',
+    width: '17px', height: '17px',
+    border: '2.5px solid rgba(255,255,255,0.35)',
+    borderTopColor: 'white',
+    borderRadius: '50%', display: 'inline-block',
     animation: 'spin 0.7s linear infinite',
   },
-  bottomText: { textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--muted)' },
-  link: { color: 'var(--yellow)', fontWeight: '700', textDecoration: 'none' },
+  bottomText: { textAlign: 'center', marginTop: '20px', fontSize: '14px', color: '#718096' },
+  link: { color: '#D97706', fontWeight: '700', textDecoration: 'none' },
   divider: { position: 'relative', textAlign: 'center', margin: '20px 0 16px' },
-  dividerLine: { position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.08)' },
-  dividerText: { background: 'var(--card)', padding: '0 12px', color: 'rgba(255,255,255,0.3)', fontSize: 12, position: 'relative' },
+  dividerLine: { position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: '#E2E8F0' },
+  dividerText: {
+    background: '#FFFFFF', padding: '0 12px', color: '#9CA3AF',
+    fontSize: 12, position: 'relative',
+  },
 
   /* OTP screen specific */
-  otpHint: { fontSize: '13px', color: 'var(--muted)', marginBottom: '20px' },
+  otpHint: { fontSize: '13px', color: '#718096', marginBottom: '20px' },
   otpInput: {
-    width: '100%', padding: '16px', background: 'var(--dark)',
-    border: '1.5px solid var(--border)', borderRadius: '14px',
-    color: 'var(--text)', fontSize: '28px', letterSpacing: '12px', textAlign: 'center',
+    width: '100%', padding: '16px', background: '#FFFFFF',
+    border: '1.5px solid #E2E8F0', borderRadius: '14px',
+    color: '#1A202C', fontSize: '28px', letterSpacing: '12px', textAlign: 'center',
     outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.18s, box-shadow 0.18s',
   },
   devOtpBadge: {
     display: 'inline-block', marginTop: '10px', padding: '6px 12px',
-    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.30)',
-    borderRadius: '8px', fontSize: '12px', color: '#FBB724', fontWeight: 600,
+    background: '#FEF3C7', border: '1px solid #FCD34D',
+    borderRadius: '8px', fontSize: '12px', color: '#D97706', fontWeight: 600,
   },
-  timerText: { fontSize: '13px', color: 'var(--muted)', textAlign: 'center', marginTop: '10px' },
+  timerText: { fontSize: '13px', color: '#718096', textAlign: 'center', marginTop: '10px' },
   resendBtn: {
-    background: 'none', border: 'none', color: 'var(--yellow)', cursor: 'pointer',
+    background: 'none', border: 'none', color: '#D97706', cursor: 'pointer',
     fontSize: '13px', fontWeight: '600', padding: 0, marginTop: '10px', display: 'block', width: '100%', textAlign: 'center',
-  },
-
-  /* Google button */
-  googleBtn: {
-    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-    background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)',
-    color: 'white', borderRadius: 14, padding: '13px 20px', fontSize: 15, fontWeight: 600,
-    cursor: 'pointer', transition: 'background 0.2s, border-color 0.2s',
   },
 
   /* Google phone-link screen */
   googleUserBanner: {
     display: 'flex', alignItems: 'center', gap: 12,
-    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+    background: '#F5F7FA', border: '1px solid #E2E8F0',
     borderRadius: 14, padding: '12px 16px', marginBottom: 20,
   },
   gAvatar: {
-    width: 42, height: 42, background: 'linear-gradient(135deg,#FFD700,#FFA000)',
+    width: 42, height: 42, background: 'linear-gradient(135deg, #F59E0B, #D97706)',
     borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#111', fontWeight: 800, fontSize: 18, flexShrink: 0,
+    color: 'white', fontWeight: 800, fontSize: 18, flexShrink: 0,
   },
   gBadge: {
-    marginLeft: 'auto', background: 'rgba(66,133,244,0.15)',
-    border: '1px solid rgba(66,133,244,0.3)', color: '#4285F4',
+    marginLeft: 'auto', background: '#EFF6FF',
+    border: '1px solid #BFDBFE', color: '#2563EB',
     borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700,
   },
 }
@@ -197,7 +190,11 @@ const S = {
 function BrandHeader() {
   return (
     <div style={S.logoSection}>
-      <div style={S.boltWrap}><span style={S.boltEmoji}>⚡</span></div>
+      <img
+        src="/logo.png"
+        alt="CABkaro"
+        style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', flexShrink: 0 }}
+      />
       <div>
         <span style={S.appName}>CABkaro</span>
         <span style={S.tagline}>Your ride, your way</span>
@@ -220,6 +217,13 @@ export default function SignupPage() {
   })
   const [showPassword,        setShowPassword]        = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // ── Phone input state (country code + validation) ─────────────────────────
+  const [phoneDialCode,  setPhoneDialCode]  = useState('+91')
+  const [phoneCountry,   setPhoneCountry]   = useState('IN')
+  const [phoneValid,     setPhoneValid]     = useState(false)
+  const [googlePhoneDialCode, setGooglePhoneDialCode] = useState('+91')
+  const [googlePhoneValid,    setGooglePhoneValid]    = useState(false)
 
   // ── Post-signup OTP verification ──────────────────────────────────────────
   const [signupOtp,       setSignupOtp]       = useState('')
@@ -302,8 +306,8 @@ export default function SignupPage() {
 
   // ── Save phone number after Google sign-up (no OTP) ──────────────────────
   const handleSaveGooglePhone = async () => {
-    if (!googlePhone.trim() || googlePhone.trim().length < 10) {
-      setError('Enter a valid 10-digit phone number')
+    if (!googlePhone.trim() || !googlePhoneValid) {
+      setError('Enter a valid phone number')
       return
     }
     setError('')
@@ -334,7 +338,7 @@ export default function SignupPage() {
   const handleBlur  = (name) => setInputFocus(p => ({ ...p, [name]: false }))
   const focusStyle  = (name) =>
     inputFocus[name]
-      ? { borderColor: 'var(--yellow)', boxShadow: '0 0 0 3px rgba(255,214,0,0.16)' }
+      ? { borderColor: '#F59E0B', boxShadow: '0 0 0 3px rgba(245,158,11,0.15)' }
       : {}
 
   // ── Geolocation ───────────────────────────────────────────────────────────
@@ -368,6 +372,7 @@ export default function SignupPage() {
     e.preventDefault()
     if (!form.name.trim())        { setError('Full name is required');                   return }
     if (!form.phoneNumber.trim()) { setError('Phone number is required');                return }
+    if (!phoneValid)              { setError('Enter a valid phone number for the selected country'); return }
     if (!form.email.trim())       { setError('Email address is required');               return }
     if (!form.password)           { setError('Password is required');                    return }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return }
@@ -454,7 +459,7 @@ export default function SignupPage() {
           <BrandHeader />
           <h2 style={S.title}>Verify your phone 📲</h2>
           <p style={S.otpHint}>
-            We sent a 6-digit OTP to <strong style={{ color: 'var(--yellow)' }}>{signupPhoneRef}</strong>.
+            We sent a 6-digit OTP to <strong style={{ color: '#D97706' }}>{signupPhoneRef}</strong>.
             Enter it below to complete your signup.
           </p>
 
@@ -529,8 +534,8 @@ export default function SignupPage() {
           <div style={S.googleUserBanner}>
             <div style={S.gAvatar}>{googleUser?.name?.[0]?.toUpperCase() || 'G'}</div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{googleUser?.name}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{googleUser?.email}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1A202C' }}>{googleUser?.name}</div>
+              <div style={{ fontSize: 12, color: '#718096' }}>{googleUser?.email}</div>
             </div>
             <div style={S.gBadge}>Google</div>
           </div>
@@ -542,19 +547,16 @@ export default function SignupPage() {
 
           <div style={S.formGroup}>
             <label style={S.label}>Mobile Number</label>
-            <input
-              type="tel"
-              placeholder="9876543210"
+            <PhoneInput
               value={googlePhone}
-              onChange={e => { setGooglePhone(e.target.value.replace(/\D/g, '')); setError('') }}
-              onFocus={() => setInputFocus(p => ({ ...p, gphone: true }))}
-              onBlur={() => setInputFocus(p => ({ ...p, gphone: false }))}
-              maxLength={10}
-              style={{
-                ...S.input,
-                ...(inputFocus.gphone ? { borderColor: 'var(--yellow)', boxShadow: '0 0 0 3px rgba(255,214,0,0.16)' } : {}),
+              onChange={(digits, dialCode, countryCode, isValid) => {
+                setGooglePhone(digits)
+                setGooglePhoneDialCode(dialCode)
+                setGooglePhoneValid(isValid)
+                if (error) setError('')
               }}
               autoFocus
+              variant="light"
             />
           </div>
 
@@ -604,12 +606,17 @@ export default function SignupPage() {
           {/* Phone */}
           <div style={S.formGroup}>
             <label style={S.label} htmlFor="phoneNumber">Phone Number</label>
-            <input
-              id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 98765 43210"
-              value={form.phoneNumber} onChange={handleChange}
-              onFocus={() => handleFocus('phoneNumber')} onBlur={() => handleBlur('phoneNumber')}
+            <PhoneInput
+              value={form.phoneNumber}
+              onChange={(digits, dialCode, countryCode, isValid) => {
+                setForm(prev => ({ ...prev, phoneNumber: digits }))
+                setPhoneDialCode(dialCode)
+                setPhoneCountry(countryCode)
+                setPhoneValid(isValid)
+                if (error) setError('')
+              }}
               autoComplete="tel"
-              style={{ ...S.input, ...focusStyle('phoneNumber') }}
+              variant="light"
             />
           </div>
 
@@ -658,8 +665,8 @@ export default function SignupPage() {
                 autoComplete="new-password"
                 style={{
                   ...S.passwordInput, ...focusStyle('confirmPassword'),
-                  ...(passwordsEntered && !passwordsMatch ? { borderColor: 'var(--red)' } : {}),
-                  ...(passwordsEntered && passwordsMatch  ? { borderColor: 'var(--green)' } : {}),
+                  ...(passwordsEntered && !passwordsMatch ? { borderColor: '#DC2626' } : {}),
+                  ...(passwordsEntered && passwordsMatch  ? { borderColor: '#059669' } : {}),
                 }}
               />
               <button type="button" style={S.eyeBtn}
@@ -693,7 +700,7 @@ export default function SignupPage() {
                   Using: <strong>{parseFloat(form.latitude).toFixed(4)}</strong>,{' '}
                   <strong>{parseFloat(form.longitude).toFixed(4)}</strong>
                   {!locationDetected && (
-                    <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: '6px' }}>
+                    <span style={{ color: '#718096', fontWeight: 400, marginLeft: '6px' }}>
                       (Bengaluru default)
                     </span>
                   )}

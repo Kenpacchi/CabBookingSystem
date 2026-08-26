@@ -2,6 +2,7 @@ package com.TestSpringBoot.cbs.controller;
 
 import com.TestSpringBoot.cbs.model.entities.ChatMessage;
 import com.TestSpringBoot.cbs.repository.ChatMessageRepository;
+import com.TestSpringBoot.cbs.service.GroqService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -11,11 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Real-time support chat via polling.
+ * User messages → Groq LLM → AI reply with user context + guardrails.
  * Frontend polls GET /api/chat/messages/{sessionId} every 3 seconds.
- * Support (admin) replies via POST /api/chat/support-reply.
  */
 @RestController
 @RequestMapping("/api/chat")
@@ -23,6 +25,9 @@ public class SupportChatController {
 
     @Autowired
     private ChatMessageRepository chatRepo;
+
+    @Autowired
+    private GroqService groqService;
 
     @Value("${support.phone:7974843494}")
     private String supportPhone;
@@ -33,12 +38,12 @@ public class SupportChatController {
         String phone = getPhone();
         String sessionId = "SESS_" + phone + "_" + System.currentTimeMillis();
 
-        // Drop a welcome message from support
+        // Welcome message from AI
         ChatMessage welcome = ChatMessage.builder()
                 .sessionId(sessionId)
                 .userPhone(phone)
                 .sender("SUPPORT")
-                .message("👋 Hello! Welcome to CABkaro support. How can I help you today? You can also call us at " + supportPhone)
+                .message("👋 Hello! I'm CABkaro's AI support assistant. I can help you with ride bookings, payments, driver issues, and account questions. How can I help you today? For urgent help, call us at " + supportPhone)
                 .sentAt(LocalDateTime.now())
                 .readBySupport(true)
                 .build();
@@ -50,35 +55,47 @@ public class SupportChatController {
         return ResponseEntity.ok(resp);
     }
 
-    /** User sends a message */
+    /** User sends a message — triggers Groq AI reply */
     @PostMapping("/send")
     public ResponseEntity<ChatMessage> sendMessage(@RequestBody Map<String, String> body) {
         String phone = getPhone();
+        String sessionId = body.get("sessionId");
+        String userText  = body.getOrDefault("message", "").trim();
+
+        // Save user message
         ChatMessage msg = ChatMessage.builder()
-                .sessionId(body.get("sessionId"))
+                .sessionId(sessionId)
                 .userPhone(phone)
                 .sender("USER")
-                .message(body.get("message"))
+                .message(userText)
                 .sentAt(LocalDateTime.now())
                 .readBySupport(false)
                 .build();
-
         ChatMessage saved = chatRepo.save(msg);
 
-        // Auto-reply if keywords match (basic bot)
-        String text = body.get("message").toLowerCase();
-        String autoReply = getAutoReply(text, supportPhone);
-        if (autoReply != null) {
-            ChatMessage bot = ChatMessage.builder()
-                    .sessionId(body.get("sessionId"))
-                    .userPhone(phone)
-                    .sender("SUPPORT")
-                    .message(autoReply)
-                    .sentAt(LocalDateTime.now().plusSeconds(1))
-                    .readBySupport(true)
-                    .build();
-            chatRepo.save(bot);
-        }
+        // Build session history for Groq context (last 10 messages)
+        List<ChatMessage> recentMessages = chatRepo.findBySessionIdOrderBySentAtAsc(sessionId);
+        List<Map<String, String>> history = recentMessages.stream()
+                .limit(10)
+                .map(m -> Map.of(
+                    "role",    "USER".equals(m.getSender()) ? "user" : "assistant",
+                    "content", m.getMessage()
+                ))
+                .collect(Collectors.toList());
+
+        // Get AI reply from Groq (includes user context + guardrails)
+        String aiReply = groqService.getReply(phone, userText, history);
+
+        // Save AI reply
+        ChatMessage bot = ChatMessage.builder()
+                .sessionId(sessionId)
+                .userPhone(phone)
+                .sender("SUPPORT")
+                .message(aiReply)
+                .sentAt(LocalDateTime.now().plusSeconds(1))
+                .readBySupport(true)
+                .build();
+        chatRepo.save(bot);
 
         return ResponseEntity.ok(saved);
     }
@@ -89,7 +106,7 @@ public class SupportChatController {
         return ResponseEntity.ok(chatRepo.findBySessionIdOrderBySentAtAsc(sessionId));
     }
 
-    /** Support-side: reply to a user session */
+    /** Support-side: manual reply to a user session (admin override) */
     @PostMapping("/support-reply")
     public ResponseEntity<ChatMessage> supportReply(@RequestBody Map<String, String> body) {
         ChatMessage msg = ChatMessage.builder()
@@ -110,29 +127,75 @@ public class SupportChatController {
         return ResponseEntity.ok(Map.of("unread", count));
     }
 
-    // ── Auto-reply bot ────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Driver Chat — scoped per rideId
+    // Session key convention: "DRIVER_RIDE_{rideId}"
+    // ─────────────────────────────────────────────────────────────────────────
 
-    private String getAutoReply(String text, String phone) {
-        if (text.contains("cancel")) {
-            return "To cancel a ride, go to your active ride screen and tap 'Cancel'. If you're having trouble, call us at " + phone;
+    /**
+     * POST /api/chat/driver-message
+     * Body: { rideId, message, sender }
+     * Saves a user→driver message for the given ride, then triggers an AI
+     * driver reply (Groq) which is saved as a DRIVER-sender message.
+     */
+    @PostMapping("/driver-message")
+    public ResponseEntity<ChatMessage> sendDriverMessage(@RequestBody Map<String, Object> body) {
+        String phone   = getPhone();
+        String rideId  = body.getOrDefault("rideId",  "").toString();
+        String text    = body.getOrDefault("message", "").toString().trim();
+        String sender  = body.getOrDefault("sender",  "USER").toString();
+
+        if (rideId.isBlank() || text.isBlank()) {
+            return ResponseEntity.badRequest().build();
         }
-        if (text.contains("refund") || text.contains("payment") || text.contains("billing")) {
-            return "For refund or payment issues, our team will review and respond within 24 hours. You can also call " + phone;
+
+        String sessionId = "DRIVER_RIDE_" + rideId;
+
+        // Save the user's message
+        ChatMessage msg = ChatMessage.builder()
+                .sessionId(sessionId)
+                .userPhone(phone)
+                .sender(sender)           // USER or DRIVER
+                .message(text)
+                .sentAt(LocalDateTime.now())
+                .readBySupport(false)
+                .build();
+        ChatMessage saved = chatRepo.save(msg);
+
+        // If the sender is USER, generate an AI driver reply asynchronously
+        if ("USER".equalsIgnoreCase(sender)) {
+            final String userText = text;
+            final String finalSessionId = sessionId;
+            final String finalPhone = phone;
+            new Thread(() -> {
+                try {
+                    String driverReply = groqService.getDriverReply(userText);
+                    ChatMessage driverMsg = ChatMessage.builder()
+                            .sessionId(finalSessionId)
+                            .userPhone(finalPhone)
+                            .sender("DRIVER")
+                            .message(driverReply)
+                            .sentAt(LocalDateTime.now().plusSeconds(2))
+                            .readBySupport(false)
+                            .build();
+                    chatRepo.save(driverMsg);
+                } catch (Exception e) {
+                    // Swallow — driver reply is best-effort
+                }
+            }).start();
         }
-        if (text.contains("driver") && (text.contains("complaint") || text.contains("bad") || text.contains("rude"))) {
-            return "We're sorry to hear that! Please share the ride ID and we'll investigate immediately. Call " + phone + " for urgent complaints.";
-        }
-        if (text.contains("track") || text.contains("where")) {
-            return "You can track your ride in real-time on the booking screen. If your driver isn't moving, please call " + phone;
-        }
-        if (text.contains("hello") || text.contains("hi") || text.contains("hey")) {
-            return "Hello! 😊 I'm the CABkaro support bot. For urgent help call " + phone + ". How can I assist you?";
-        }
-        if (text.contains("thank")) {
-            return "You're welcome! 😊 Have a safe ride with CABkaro. Is there anything else I can help you with?";
-        }
-        // No match — queue for human
-        return "Thanks for your message. Our support team will respond shortly. For urgent help, call " + phone;
+
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * GET /api/chat/driver/{rideId}
+     * Poll all messages for a ride-scoped driver chat.
+     */
+    @GetMapping("/driver/{rideId}")
+    public ResponseEntity<List<ChatMessage>> getDriverChat(@PathVariable String rideId) {
+        String sessionId = "DRIVER_RIDE_" + rideId;
+        return ResponseEntity.ok(chatRepo.findBySessionIdOrderBySentAtAsc(sessionId));
     }
 
     private String getPhone() {

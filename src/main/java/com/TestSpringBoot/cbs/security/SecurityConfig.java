@@ -44,24 +44,15 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints — no token required
-                .requestMatchers(
-                    "/api/auth/**",
-                    "/otp/**",
-                    "/actuator/**",
-                    "/h2-console/**",
-                    // Serve React SPA routes without auth
-                    "/",
-                    "/index.html",
-                    "/assets/**",
-                    "/login",
-                    "/signup",
-                    "/profile",
-                    "/support",
-                    "/vite.svg"
-                ).permitAll()
-                // All other endpoints require a valid JWT
-                .anyRequest().authenticated()
+                // All API endpoints require JWT (except auth)
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/otp/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
+                // All /api/** routes require authentication
+                .requestMatchers("/api/**").authenticated()
+                // Everything else (React SPA routes + static assets) is public
+                .anyRequest().permitAll()
             )
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)

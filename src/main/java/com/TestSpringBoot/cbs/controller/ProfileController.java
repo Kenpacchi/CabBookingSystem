@@ -1,9 +1,12 @@
 package com.TestSpringBoot.cbs.controller;
 
+import com.TestSpringBoot.cbs.model.entities.QuickLocation;
 import com.TestSpringBoot.cbs.model.entities.RideHistory;
 import com.TestSpringBoot.cbs.model.entities.User;
+import com.TestSpringBoot.cbs.repository.QuickLocationRepository;
 import com.TestSpringBoot.cbs.repository.RideHistoryRepository;
 import com.TestSpringBoot.cbs.service.UserService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,6 +21,7 @@ public class ProfileController {
 
     @Autowired private UserService userService;
     @Autowired private RideHistoryRepository rideHistoryRepo;
+    @Autowired private QuickLocationRepository quickLocationRepo;
 
     /** GET /api/user/profile — user details + ride stats */
     @GetMapping("/profile")
@@ -59,6 +63,65 @@ public class ProfileController {
         if (body.containsKey("email") && !body.get("email").isBlank()) user.setEmail(body.get("email"));
         userService.save(user);
         return ResponseEntity.ok(Map.of("success", true, "message", "Profile updated"));
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    //  QUICK LOCATIONS
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * GET /api/user/quick-locations
+     * Returns all saved quick locations for the authenticated user.
+     */
+    @GetMapping("/quick-locations")
+    public ResponseEntity<List<QuickLocation>> getQuickLocations() {
+        return ResponseEntity.ok(quickLocationRepo.findByUserPhone(getPhone()));
+    }
+
+    /**
+     * POST /api/user/quick-locations
+     * Save or update a quick location.
+     * Body: { label, address, latitude, longitude }
+     * Labels: HOME | WORK | GYM | SCHOOL | HOSPITAL | MARKET | OTHER
+     */
+    @PostMapping("/quick-locations")
+    @Transactional
+    public ResponseEntity<QuickLocation> saveQuickLocation(@RequestBody Map<String, Object> body) {
+        String phone   = getPhone();
+        String label   = ((String) body.get("label")).toUpperCase().trim();
+        String address = (String) body.getOrDefault("address", "");
+        double lat     = ((Number) body.get("latitude")).doubleValue();
+        double lng     = ((Number) body.get("longitude")).doubleValue();
+
+        // Validate label
+        Set<String> validLabels = Set.of("HOME", "WORK", "GYM", "SCHOOL", "HOSPITAL", "MARKET", "OTHER");
+        if (!validLabels.contains(label)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Upsert — delete existing and save new (simpler than merge)
+        quickLocationRepo.deleteByUserPhoneAndLabel(phone, label);
+
+        QuickLocation saved = quickLocationRepo.save(QuickLocation.builder()
+                .userPhone(phone)
+                .label(label)
+                .address(address)
+                .latitude(lat)
+                .longitude(lng)
+                .build());
+
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * DELETE /api/user/quick-locations/{label}
+     * Remove a saved quick location by label.
+     */
+    @DeleteMapping("/quick-locations/{label}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> deleteQuickLocation(@PathVariable String label) {
+        quickLocationRepo.deleteByUserPhoneAndLabel(getPhone(), label.toUpperCase());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     private String getPhone() {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, saveAuthData, isLoggedIn } from '../services/api.js'
 import api from '../services/api.js'
+import PhoneInput from '../components/PhoneInput.jsx'
 
 // ── Load Google Identity Services SDK ────────────────────────────────────────
 function loadGoogleScript() {
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [phone, setPhone]         = useState('')
   const [password, setPassword]   = useState('')
   const [showPass, setShowPass]   = useState(false)
+  const [phoneValid, setPhoneValid] = useState(false)
 
   // OTP login
   const [otpPhone, setOtpPhone]   = useState('')
@@ -38,6 +40,7 @@ export default function LoginPage() {
   const [otpSent, setOtpSent]     = useState(false)
   const [otpValue, setOtpValue]   = useState('') // shown in dev mode
   const [otpTimer, setOtpTimer]   = useState(0)
+  const [otpPhoneValid, setOtpPhoneValid] = useState(false)
 
   // Google OAuth — after OAuth if no phone: ask for phone
   const [googleUser, setGoogleUser]   = useState(null) // {name, email, googleId}
@@ -45,6 +48,7 @@ export default function LoginPage() {
   const [googleOtp, setGoogleOtp]     = useState('')
   const [googleOtpSent, setGoogleOtpSent] = useState(false)
   const [googleTempToken, setGoogleTempToken] = useState('')
+  const [googlePhoneValid, setGooglePhoneValid] = useState(false)
 
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
@@ -106,8 +110,8 @@ export default function LoginPage() {
 
   // ── Save phone number after Google sign-in (no OTP) ───────────────────────
   const handleSaveGooglePhone = async () => {
-    if (!googlePhone.trim() || googlePhone.trim().length < 10) {
-      setError('Enter a valid 10-digit phone number')
+    if (!googlePhone.trim() || !googlePhoneValid) {
+      setError('Enter a valid phone number')
       return
     }
     setError(''); setLoading(true)
@@ -129,8 +133,9 @@ export default function LoginPage() {
   // ── Password login ─────────────────────────────────────────────────────────
   const handlePasswordLogin = async (e) => {
     e.preventDefault()
-    if (!phone.trim()) { setError('Enter phone number'); return }
-    if (!password)     { setError('Enter password');     return }
+    if (!phone.trim())  { setError('Enter phone number');             return }
+    if (!phoneValid)    { setError('Enter a valid phone number');     return }
+    if (!password)      { setError('Enter password');                 return }
     setError(''); setLoading(true)
     try {
       const res = await authApi.login(phone.trim(), password)
@@ -143,7 +148,7 @@ export default function LoginPage() {
 
   // ── OTP login ─────────────────────────────────────────────────────────────
   const handleSendOtp = async () => {
-    if (!otpPhone.trim() || otpPhone.length < 10) { setError('Enter a valid 10-digit phone'); return }
+    if (!otpPhone.trim() || !otpPhoneValid) { setError('Enter a valid phone number'); return }
     setError(''); setLoading(true)
     try {
       const res = await api.post('/auth/send-otp', { phoneNumber: otpPhone })
@@ -168,7 +173,7 @@ export default function LoginPage() {
   }
 
   const f = (name) => inputFocus[name]
-    ? { borderColor: '#FFD700', boxShadow: '0 0 0 3px rgba(255,215,0,0.15)' }
+    ? { borderColor: '#F59E0B', boxShadow: '0 0 0 3px rgba(245,158,11,0.15)' }
     : {}
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -179,35 +184,39 @@ export default function LoginPage() {
       <div style={S.wrap}>
         <div style={S.card}>
           <div style={S.logoRow}>
-            <div style={S.bolt}>⚡</div>
+            <img
+              src="/logo.png"
+              alt="CABkaro"
+              style={{ width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover' }}
+            />
             <span style={S.appName}>CABkaro</span>
           </div>
 
           <div style={S.googleUserBanner}>
             <div style={S.gAvatar}>{googleUser.name?.[0]?.toUpperCase() || 'G'}</div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'white' }}>{googleUser.name}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{googleUser.email}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1A202C' }}>{googleUser.name}</div>
+              <div style={{ fontSize: 12, color: '#718096' }}>{googleUser.email}</div>
             </div>
             <div style={S.gBadge}>Google</div>
           </div>
 
           <h2 style={S.title}>Add your phone number 📱</h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20 }}>
+          <p style={{ color: '#718096', fontSize: 13, marginBottom: 20 }}>
             Enter your mobile number. It must be unique and will be used for future logins.
           </p>
 
           <div style={S.formGroup}>
             <label style={S.label}>Mobile Number</label>
-            <input
-              style={{ ...S.input, ...f('gphone') }}
-              type="tel" placeholder="9876543210"
+            <PhoneInput
               value={googlePhone}
-              onChange={e => { setGooglePhone(e.target.value.replace(/\D/g, '')); setError('') }}
-              onFocus={() => setFocus(p => ({ ...p, gphone: true }))}
-              onBlur={() => setFocus(p => ({ ...p, gphone: false }))}
-              maxLength={10}
+              onChange={(digits, dialCode, countryCode, isValid) => {
+                setGooglePhone(digits)
+                setGooglePhoneValid(isValid)
+                if (error) setError('')
+              }}
               autoFocus
+              variant="light"
             />
           </div>
 
@@ -230,7 +239,11 @@ export default function LoginPage() {
 
         {/* Brand */}
         <div style={S.logoSection}>
-          <div style={S.boltWrap}><span style={{ fontSize: 36 }}>⚡</span></div>
+          <img
+            src="/logo.png"
+            alt="CABkaro"
+            style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'cover', marginBottom: '14px' }}
+          />
           <span style={S.appName}>CABkaro</span>
           <span style={S.tagline}>Your ride, your way</span>
         </div>
@@ -252,14 +265,14 @@ export default function LoginPage() {
           <form onSubmit={handlePasswordLogin} noValidate>
             <div style={S.formGroup}>
               <label style={S.label}>Phone Number</label>
-              <input
-                type="tel" placeholder="9876543210"
+              <PhoneInput
                 value={phone}
-                onChange={e => { setPhone(e.target.value); setError('') }}
-                onFocus={() => setFocus(p => ({ ...p, phone: true }))}
-                onBlur={() => setFocus(p => ({ ...p, phone: false }))}
-                style={{ ...S.input, ...f('phone') }}
-                autoComplete="tel"
+                onChange={(digits, dialCode, countryCode, isValid) => {
+                  setPhone(digits)
+                  setPhoneValid(isValid)
+                  if (error) setError('')
+                }}
+                variant="light"
               />
             </div>
             <div style={S.formGroup}>
@@ -292,14 +305,15 @@ export default function LoginPage() {
           <div>
             <div style={S.formGroup}>
               <label style={S.label}>Phone Number</label>
-              <input
-                type="tel" placeholder="9876543210"
+              <PhoneInput
                 value={otpPhone}
-                onChange={e => { setOtpPhone(e.target.value); setError('') }}
-                onFocus={() => setFocus(p => ({ ...p, otpph: true }))}
-                onBlur={() => setFocus(p => ({ ...p, otpph: false }))}
-                style={{ ...S.input, ...f('otpph') }}
+                onChange={(digits, dialCode, countryCode, isValid) => {
+                  setOtpPhone(digits)
+                  setOtpPhoneValid(isValid)
+                  if (error) setError('')
+                }}
                 disabled={otpSent}
+                variant="light"
               />
             </div>
             {!otpSent ? (
@@ -338,7 +352,10 @@ export default function LoginPage() {
         )}
 
         {/* ── Divider ── */}
-        <div style={S.divider}><span style={S.dividerText}>OR</span></div>
+        <div style={S.divider}>
+          <div style={S.dividerLine} />
+          <span style={S.dividerText}>OR</span>
+        </div>
 
         {/* ── Google Sign-In — rendered entirely by the Google Identity Services SDK ── */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -356,46 +373,99 @@ export default function LoginPage() {
 }
 
 const S = {
-  wrap: { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(160deg,#0a0a0a 0%,#0d0d1a 40%,#111827 100%)', padding:'24px 16px' },
-  card: { width:'100%', maxWidth:420, background:'#111', border:'1px solid rgba(255,255,255,0.07)', borderRadius:24, padding:'40px 32px 36px', boxShadow:'0 24px 64px rgba(0,0,0,0.6)' },
-  logoSection: { textAlign:'center', marginBottom:32 },
-  logoRow: { display:'flex', alignItems:'center', justifyContent:'center', gap:12, marginBottom:24 },
-  boltWrap: { display:'inline-flex', alignItems:'center', justifyContent:'center', width:72, height:72, borderRadius:'50%', background:'#FFD700', boxShadow:'0 0 32px rgba(255,215,0,0.4)', marginBottom:14 },
-  bolt: { width:44, height:44, background:'#FFD700', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 },
-  appName: { display:'block', fontSize:32, fontWeight:900, color:'#FFD700', letterSpacing:'-0.5px' },
-  tagline: { display:'block', fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:6 },
-  title: { fontSize:20, fontWeight:700, color:'white', marginBottom:20, marginTop:0 },
+  wrap: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(160deg, #FFFBEB 0%, #F5F7FA 100%)',
+    padding: '24px 16px',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    background: '#FFFFFF',
+    border: '1px solid #E2E8F0',
+    borderRadius: 24,
+    padding: '40px 32px 36px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+  },
+  logoSection: { textAlign: 'center', marginBottom: 32 },
+  logoRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 24 },
+  appName: { display: 'block', fontSize: 32, fontWeight: 900, color: '#D97706', letterSpacing: '-0.5px' },
+  tagline: { display: 'block', fontSize: 13, color: '#718096', marginTop: 6 },
+  title: { fontSize: 20, fontWeight: 700, color: '#1A202C', marginBottom: 20, marginTop: 0 },
 
-  modeTabs: { display:'flex', gap:4, background:'rgba(255,255,255,0.05)', borderRadius:12, padding:4, marginBottom:20 },
-  modeTab: { flex:1, background:'none', border:'none', color:'rgba(255,255,255,0.5)', borderRadius:9, padding:'9px 12px', cursor:'pointer', fontSize:13, fontWeight:600 },
-  modeTabActive: { background:'rgba(255,215,0,0.15)', color:'#FFD700' },
-
-  formGroup: { marginBottom:16 },
-  label: { display:'block', fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.5)', letterSpacing:'0.6px', textTransform:'uppercase', marginBottom:7 },
-  input: { width:'100%', padding:'13px 16px', background:'rgba(255,255,255,0.06)', border:'1.5px solid rgba(255,255,255,0.1)', borderRadius:12, color:'white', fontSize:15, outline:'none', boxSizing:'border-box', transition:'border-color 0.18s, box-shadow 0.18s' },
-  eyeBtn: { position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'rgba(255,255,255,0.4)' },
-  errBox: { marginTop:12, padding:'11px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:10, color:'#FF5252', fontSize:13 },
-  submitBtn: { marginTop:4, width:'100%', padding:15, background:'#FFD700', color:'#111', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:'0 4px 20px rgba(255,215,0,0.3)', marginBottom:4 },
-  spinner: { width:18, height:18, border:'2.5px solid rgba(0,0,0,0.25)', borderTopColor:'#111', borderRadius:'50%', display:'inline-block', animation:'spin 0.7s linear infinite' },
-  devOtp: { fontSize:12, color:'#4CAF50', marginTop:6, textAlign:'center' },
-  timerText: { fontSize:13, color:'rgba(255,255,255,0.4)', textAlign:'center' },
-  resendBtn: { background:'none', border:'none', color:'#FFD700', cursor:'pointer', fontSize:13, fontWeight:600, padding:0 },
-
-  divider: { position:'relative', textAlign:'center', margin:'24px 0' },
-  dividerText: { background:'#111', padding:'0 12px', color:'rgba(255,255,255,0.3)', fontSize:12, position:'relative', zIndex:1 },
-
-  googleBtn: {
-    width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:12,
-    background:'rgba(255,255,255,0.07)', border:'1.5px solid rgba(255,255,255,0.12)',
-    color:'white', borderRadius:14, padding:'13px 20px', fontSize:15, fontWeight:600,
-    cursor:'pointer', transition:'background 0.2s, border-color 0.2s',
+  modeTabs: { display: 'flex', gap: 4, background: '#F5F7FA', borderRadius: 12, padding: 4, marginBottom: 20 },
+  modeTab: {
+    flex: 1, background: 'none', border: 'none', color: '#718096',
+    borderRadius: 9, padding: '9px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+  },
+  modeTabActive: {
+    background: 'white', color: '#D97706',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
   },
 
-  bottomText: { textAlign:'center', marginTop:22, fontSize:14, color:'rgba(255,255,255,0.5)' },
-  link: { color:'#FFD700', fontWeight:700, textDecoration:'none' },
+  formGroup: { marginBottom: 16 },
+  label: {
+    display: 'block', fontSize: 12, fontWeight: 600, color: '#718096',
+    letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: 7,
+  },
+  input: {
+    width: '100%', padding: '13px 16px', background: '#FFFFFF',
+    border: '1.5px solid #E2E8F0', borderRadius: 12,
+    color: '#1A202C', fontSize: 15, outline: 'none',
+    boxSizing: 'border-box', transition: 'border-color 0.18s, box-shadow 0.18s',
+  },
+  eyeBtn: {
+    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+    background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#718096',
+  },
+  errBox: {
+    marginTop: 12, padding: '11px 14px', background: '#FEE2E2',
+    border: '1px solid #FCA5A5', borderRadius: 10, color: '#DC2626', fontSize: 13,
+  },
+  submitBtn: {
+    marginTop: 4, width: '100%', padding: 15,
+    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    color: 'white', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 800,
+    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    gap: 10, boxShadow: '0 4px 20px rgba(245,158,11,0.35)', marginBottom: 4,
+  },
+  spinner: {
+    width: 18, height: 18,
+    border: '2.5px solid rgba(255,255,255,0.35)',
+    borderTopColor: 'white',
+    borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite',
+  },
+  devOtp: { fontSize: 12, color: '#059669', marginTop: 6, textAlign: 'center' },
+  timerText: { fontSize: 13, color: '#718096', textAlign: 'center' },
+  resendBtn: { background: 'none', border: 'none', color: '#D97706', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0 },
+
+  divider: { position: 'relative', textAlign: 'center', margin: '24px 0' },
+  dividerLine: { position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: '#E2E8F0' },
+  dividerText: {
+    background: 'white', padding: '0 12px', color: '#9CA3AF',
+    fontSize: 12, position: 'relative', zIndex: 1,
+  },
+
+  bottomText: { textAlign: 'center', marginTop: 22, fontSize: 14, color: '#718096' },
+  link: { color: '#D97706', fontWeight: 700, textDecoration: 'none' },
 
   // Google phone link screen
-  googleUserBanner: { display:'flex', alignItems:'center', gap:12, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:'12px 16px', marginBottom:20 },
-  gAvatar: { width:42, height:42, background:'linear-gradient(135deg,#FFD700,#FFA000)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'#111', fontWeight:800, fontSize:18, flexShrink:0 },
-  gBadge: { marginLeft:'auto', background:'rgba(66,133,244,0.15)', border:'1px solid rgba(66,133,244,0.3)', color:'#4285F4', borderRadius:8, padding:'3px 10px', fontSize:11, fontWeight:700 },
+  googleUserBanner: {
+    display: 'flex', alignItems: 'center', gap: 12,
+    background: '#F5F7FA', border: '1px solid #E2E8F0',
+    borderRadius: 14, padding: '12px 16px', marginBottom: 20,
+  },
+  gAvatar: {
+    width: 42, height: 42, background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'white', fontWeight: 800, fontSize: 18, flexShrink: 0,
+  },
+  gBadge: {
+    marginLeft: 'auto', background: '#EFF6FF',
+    border: '1px solid #BFDBFE', color: '#2563EB',
+    borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700,
+  },
 }

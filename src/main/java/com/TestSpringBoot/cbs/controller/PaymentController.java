@@ -56,11 +56,6 @@ public class PaymentController {
             int amount = Integer.parseInt(body.get("amount").toString());
             String receiptId = "rcpt_" + System.currentTimeMillis();
 
-            if (razorpayKeyId.contains("placeholder")) {
-                // Return mock order for dev/test mode
-                return ResponseEntity.ok(buildMockOrder(amount, body.get("rideId")));
-            }
-
             // Call Razorpay Orders API
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
@@ -106,8 +101,7 @@ public class PaymentController {
             String orderId   = (String) body.get("razorpayOrderId");
             String signature = (String) body.get("razorpaySignature");
 
-            boolean valid = razorpayKeySecret.contains("placeholder")
-                    || (orderId != null && orderId.startsWith("order_mock_"))
+            boolean valid = (orderId != null && orderId.startsWith("order_mock_"))
                     || verifySignature(orderId + "|" + paymentId, signature, razorpayKeySecret);
 
             if (valid) {

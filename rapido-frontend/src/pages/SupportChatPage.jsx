@@ -92,11 +92,13 @@ export default function SupportChatPage() {
       {/* ── Header ── */}
       <div style={S.header}>
         <button style={S.backBtn} onClick={() => navigate(-1)}>‹</button>
-        <div style={S.agentAvatar}>🛟</div>
+        <div style={S.agentAvatar}>
+          <span style={{ color: '#D97706', fontWeight: 800, fontSize: 14 }}>CS</span>
+        </div>
         <div style={S.agentInfo}>
           <div style={S.agentName}>CABkaro Support</div>
           <div style={S.agentStatus}>
-            <span style={{ ...S.statusDot, background: online ? '#4CAF50' : '#FF9800' }} />
+            <span style={{ ...S.statusDot, background: online ? '#059669' : '#F59E0B' }} />
             {online ? 'Online · Usually replies in 5 min' : 'Bot mode'}
           </div>
         </div>
@@ -122,7 +124,11 @@ export default function SupportChatPage() {
           const isUser = msg.sender === 'USER'
           return (
             <div key={msg.id || i} style={{ ...S.msgRow, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-              {!isUser && <div style={S.supportAvatar}>🛟</div>}
+              {!isUser && (
+                <div style={S.supportAvatar}>
+                  <span style={{ color: '#D97706', fontWeight: 800, fontSize: 10 }}>CS</span>
+                </div>
+              )}
               <div style={{ maxWidth: '75%' }}>
                 <div style={{ ...S.bubble, ...(isUser ? S.userBubble : S.supportBubble) }}>
                   {msg.message}
@@ -170,85 +176,88 @@ export default function SupportChatPage() {
 const S = {
   page: {
     display: 'flex', flexDirection: 'column', height: '100vh',
-    background: '#0a0a0a', color: 'white',
+    background: '#F5F7FA', color: '#1A202C',
   },
   header: {
     display: 'flex', alignItems: 'center', gap: 12,
-    background: '#111', borderBottom: '1px solid rgba(255,255,255,0.07)',
+    background: '#FFFFFF', borderBottom: '1px solid #E2E8F0',
     padding: '12px 16px', paddingTop: 70, flexShrink: 0,
   },
   backBtn: {
-    background: 'none', border: 'none', color: 'white',
+    background: 'none', border: 'none', color: '#1A202C',
     fontSize: 26, cursor: 'pointer', padding: 0, lineHeight: 1,
   },
   agentAvatar: {
-    width: 40, height: 40, background: 'rgba(255,215,0,0.1)',
-    border: '2px solid rgba(255,215,0,0.3)', borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+    width: 40, height: 40, background: '#FEF3C7',
+    border: '2px solid #FCD34D', borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   agentInfo: { flex: 1 },
-  agentName: { fontSize: 15, fontWeight: 700 },
-  agentStatus: { fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 4 },
+  agentName: { fontSize: 15, fontWeight: 700, color: '#1A202C' },
+  agentStatus: { fontSize: 11, color: '#718096', display: 'flex', alignItems: 'center', gap: 4 },
   statusDot: { width: 7, height: 7, borderRadius: '50%', display: 'inline-block' },
   callLink: {
     fontSize: 22, textDecoration: 'none',
-    background: 'rgba(76,175,80,0.15)', border: '1px solid rgba(76,175,80,0.3)',
-    borderRadius: 10, padding: '6px 12px',
+    background: '#D1FAE5', border: '1px solid #A7F3D0',
+    borderRadius: 10, padding: '6px 12px', color: '#065F46',
   },
   phoneBanner: {
-    background: 'rgba(255,215,0,0.06)', borderBottom: '1px solid rgba(255,215,0,0.1)',
-    padding: '8px 16px', fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 0,
+    background: '#FFFBEB', borderBottom: '1px solid #FDE68A',
+    padding: '8px 16px', fontSize: 12, color: '#92400E', flexShrink: 0,
   },
-  phoneLink: { color: '#FFD700', fontWeight: 700, textDecoration: 'none' },
+  phoneLink: { color: '#D97706', fontWeight: 700, textDecoration: 'none' },
   messages: {
     flex: 1, overflowY: 'auto', padding: '16px',
     display: 'flex', flexDirection: 'column', gap: 10,
+    background: '#F5F7FA',
   },
   emptyMsg: {
-    textAlign: 'center', color: 'rgba(255,255,255,0.3)',
+    textAlign: 'center', color: '#9CA3AF',
     fontSize: 13, marginTop: 40,
   },
   msgRow: { display: 'flex', alignItems: 'flex-end', gap: 8 },
   supportAvatar: {
-    width: 28, height: 28, background: 'rgba(255,215,0,0.1)',
+    width: 28, height: 28, background: '#FEF3C7',
+    border: '1px solid #FCD34D',
     borderRadius: '50%', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', fontSize: 14, flexShrink: 0,
+    justifyContent: 'center', flexShrink: 0,
   },
   bubble: {
     padding: '10px 14px', borderRadius: 16, fontSize: 14, lineHeight: 1.5,
   },
   userBubble: {
-    background: 'linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,160,0,0.15))',
-    border: '1px solid rgba(255,215,0,0.25)', borderBottomRightRadius: 4,
-    color: 'white',
+    background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+    border: '1px solid #FCD34D', borderBottomRightRadius: 4,
+    color: '#1A202C',
   },
   supportBubble: {
-    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)',
-    borderBottomLeftRadius: 4, color: 'rgba(255,255,255,0.9)',
+    background: '#FFFFFF', border: '1px solid #E2E8F0',
+    borderBottomLeftRadius: 4, color: '#374151',
   },
-  msgTime: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3, padding: '0 4px' },
+  msgTime: { fontSize: 10, color: '#9CA3AF', marginTop: 3, padding: '0 4px' },
   quickReplies: {
     display: 'flex', gap: 8, padding: '8px 16px',
     overflowX: 'auto', flexShrink: 0,
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    background: '#FFFFFF', borderTop: '1px solid #E2E8F0',
     scrollbarWidth: 'none',
   },
   quickChip: {
-    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.8)', borderRadius: 20, padding: '7px 14px',
+    background: '#F5F7FA', border: '1px solid #E2E8F0',
+    color: '#374151', borderRadius: 20, padding: '7px 14px',
     cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap', fontWeight: 500,
   },
   inputBar: {
     display: 'flex', gap: 10, padding: '12px 16px 20px',
-    background: '#111', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0,
+    background: '#FFFFFF', borderTop: '1px solid #E2E8F0', flexShrink: 0,
   },
   textInput: {
-    flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: 24, padding: '12px 16px', color: 'white', fontSize: 14,
+    flex: 1, background: '#F5F7FA', border: '1px solid #E2E8F0',
+    borderRadius: 24, padding: '12px 16px', color: '#1A202C', fontSize: 14,
+    outline: 'none',
   },
   sendBtn: {
-    background: 'linear-gradient(135deg, #FFD700, #FFA000)',
-    color: '#111', border: 'none', borderRadius: '50%',
+    background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    color: 'white', border: 'none', borderRadius: '50%',
     width: 44, height: 44, cursor: 'pointer', fontSize: 18, fontWeight: 700,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,

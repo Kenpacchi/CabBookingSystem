@@ -12,6 +12,7 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
   const [showPayment, setShowPayment] = useState(false)
   const [submitting, setSubmitting]   = useState(false)
   const [done, setDone]           = useState(false)
+  const [payFirst, setPayFirst]   = useState(false)
 
   const tipAmount = customTip ? parseFloat(customTip) || 0 : tip
 
@@ -38,13 +39,13 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
     }
   }
 
-  if (showPayment) {
+  if (showPayment || payFirst) {
     return (
       <PaymentModal
         rideInfo={rideInfo}
         fare={fare}
         onSuccess={onDone}
-        onClose={onDone}
+        onClose={() => { setShowPayment(false); setPayFirst(false) }}
       />
     )
   }
@@ -55,8 +56,8 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
         <div style={S.modal}>
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={S.doneIcon}>🎉</div>
-            <h2 style={{ color: '#FFD700', marginTop: 12 }}>Thanks for the feedback!</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Your rating helps improve driver quality</p>
+            <h2 style={{ color: '#1A202C', marginTop: 12 }}>Thanks for the feedback!</h2>
+            <p style={{ color: '#718096', fontSize: 14 }}>Your rating helps improve driver quality</p>
           </div>
         </div>
       </div>
@@ -86,7 +87,7 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
             {STARS.map(s => (
               <span
                 key={s}
-                style={{ ...S.star, color: s <= (hover || rating) ? '#FFD700' : 'rgba(255,255,255,0.15)' }}
+                style={{ ...S.star, color: s <= (hover || rating) ? '#F59E0B' : '#E2E8F0' }}
                 onClick={() => setRating(s)}
                 onMouseEnter={() => setHover(s)}
                 onMouseLeave={() => setHover(0)}
@@ -99,8 +100,8 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
         {/* Tip section */}
         <div style={S.tipSection}>
           <div style={S.tipHeader}>
-            <span>🎁 Add a tip</span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Optional</span>
+            <span style={{ color: '#1A202C', fontWeight: 600 }}>🎁 Add a tip</span>
+            <span style={{ color: '#718096', fontSize: 12 }}>Optional</span>
           </div>
           <div style={S.tipRow}>
             <button style={{ ...S.tipBtn, ...(tip === 0 && !customTip ? S.tipActive : {}) }}
@@ -121,7 +122,7 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
             />
           </div>
           {tipAmount > 0 && (
-            <p style={{ fontSize: 12, color: '#FFD700', marginTop: 6 }}>
+            <p style={{ fontSize: 12, color: '#D97706', marginTop: 6 }}>
               ₹{tipAmount} tip will be added to payment
             </p>
           )}
@@ -131,6 +132,14 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
         <button style={S.submitBtn} onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Submitting…' : tipAmount > 0 ? `Submit & Pay ₹${fare + tipAmount}` : 'Submit Rating'}
         </button>
+
+        {/* Pay Now — separate from rating */}
+        <button style={S.payNowBtn} onClick={() => setPayFirst(true)}>
+          💳 Pay Now  <span style={{ opacity: 0.7, fontSize: 13 }}>₹{fare}</span>
+        </button>
+        <p style={{ textAlign: 'center', fontSize: 12, color: '#A0AEC0', marginTop: 8 }}>
+          You can pay without submitting a rating
+        </p>
       </div>
     </div>
   )
@@ -138,54 +147,65 @@ export default function RateDriverModal({ rideInfo, fare, onDone }) {
 
 const S = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
     display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     zIndex: 9999, backdropFilter: 'blur(4px)',
   },
   modal: {
     width: '100%', maxWidth: 480,
-    background: '#111', borderRadius: '24px 24px 0 0',
+    background: '#FFFFFF', borderRadius: '24px 24px 0 0',
     padding: '24px 20px 36px',
-    border: '1px solid rgba(255,255,255,0.08)',
+    borderTop: '1px solid #E2E8F0',
     animation: 'fadeSlideUp 0.3s ease',
   },
-  driverRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 },
+  driverRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, background: '#FFFFFF' },
   driverAvatar: {
-    width: 50, height: 50, background: 'rgba(255,215,0,0.1)',
-    border: '2px solid rgba(255,215,0,0.3)', borderRadius: '50%',
+    width: 50, height: 50, background: '#FEF3C7',
+    border: '2px solid #FCD34D', borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 22, fontWeight: 700, color: '#FFD700',
+    fontSize: 22, fontWeight: 700, color: '#D97706',
   },
-  driverName: { fontSize: 16, fontWeight: 700, color: 'white', marginBottom: 2 },
-  driverMeta: { fontSize: 12, color: 'rgba(255,255,255,0.5)', letterSpacing: 1 },
+  driverName: { fontSize: 16, fontWeight: 700, color: '#1A202C', marginBottom: 2 },
+  driverMeta: { fontSize: 12, color: '#718096', letterSpacing: 1 },
   skipBtn: {
-    marginLeft: 'auto', background: 'none', border: '1px solid rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.4)', borderRadius: 8, padding: '6px 14px',
+    marginLeft: 'auto', background: 'none', border: '1px solid #E2E8F0',
+    color: '#718096', borderRadius: 8, padding: '6px 14px',
     cursor: 'pointer', fontSize: 13,
   },
-  starsSection: { textAlign: 'center', marginBottom: 20 },
-  rateLabel: { fontSize: 16, fontWeight: 600, color: 'white', marginBottom: 12 },
+  starsSection: { textAlign: 'center', marginBottom: 20, background: '#FFFFFF' },
+  rateLabel: { fontSize: 16, fontWeight: 600, color: '#1A202C', marginBottom: 12 },
   stars: { display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 8 },
   star: { fontSize: 44, cursor: 'pointer', transition: 'transform 0.1s', userSelect: 'none' },
-  ratingLabel: { fontSize: 14, color: 'rgba(255,215,0,0.8)', fontWeight: 600, height: 20 },
-  tipSection: { marginBottom: 20 },
+  ratingLabel: { fontSize: 14, color: '#D97706', fontWeight: 600, height: 20 },
+  tipSection: { marginBottom: 20, background: '#FFFFFF' },
   tipHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   tipRow: { display: 'flex', gap: 8 },
   tipBtn: {
-    flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.7)', borderRadius: 8, padding: '9px 6px',
+    flex: 1, background: '#F5F7FA', border: '1px solid #E2E8F0',
+    color: '#374151', borderRadius: 8, padding: '9px 6px',
     cursor: 'pointer', fontSize: 12, fontWeight: 600,
   },
-  tipActive: { background: 'rgba(255,215,0,0.15)', border: '1px solid #FFD700', color: '#FFD700' },
+  tipActive: { background: '#FEF3C7', border: '1px solid #F59E0B', color: '#D97706' },
   tipInput: {
-    flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: 8, padding: '8px 8px', color: 'white', fontSize: 12, minWidth: 0,
+    flex: 1, background: '#FFFFFF', border: '1px solid #E2E8F0',
+    borderRadius: 8, padding: '8px 8px', color: '#1A202C', fontSize: 12, minWidth: 0,
+    outline: 'none',
   },
   submitBtn: {
-    width: '100%', background: 'linear-gradient(135deg, #FFD700, #FFA000)',
-    color: '#111', border: 'none', borderRadius: 14, padding: '14px',
+    width: '100%', background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+    color: 'white', border: 'none', borderRadius: 14, padding: '14px',
     fontSize: 16, fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 4px 20px rgba(255,215,0,0.3)',
+    boxShadow: '0 4px 20px rgba(245,158,11,0.3)',
+    marginBottom: 10,
+  },
+  payNowBtn: {
+    width: '100%',
+    background: 'linear-gradient(135deg, #1A1A2E, #16213E)',
+    color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)',
+    borderRadius: 14, padding: '13px',
+    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
   },
   doneIcon: { fontSize: 60 },
 }
