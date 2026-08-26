@@ -26,16 +26,17 @@ public class BikeDriver {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "is_available")
-    private FlagTypeEnum isAvailable;
+    private FlagTypeEnum isAvailable = FlagTypeEnum.Y;
 
     @Column
-    private Boolean accept;
+    private Boolean accept = true;
+
+    // Geographic coordinates (replaces x/y grid)
+    @Column
+    private Double latitude;
 
     @Column
-    private Integer x;
-
-    @Column
-    private Integer y;
+    private Double longitude;
 
     @Column(name = "user_otp")
     private Integer userOtp;
@@ -45,4 +46,3 @@ public class BikeDriver {
     @JsonIgnore
     private Vehicle vehicle;
 }
-

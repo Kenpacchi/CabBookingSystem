@@ -16,11 +16,13 @@
 	<artifactId>CabBookingManagementSystem</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SpringBoot</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Rapido-like Cab Booking System with JWT Auth and Google Maps</description>
 
 	<properties>
 		<java.version>17</java.version>
 		<maven.compiler.parameters>true</maven.compiler.parameters>
+		<jjwt.version>0.12.6</jjwt.version>
+		<frontend.dir>${project.basedir}/rapido-frontend</frontend.dir>
 	</properties>
 
 	<dependencies>
@@ -30,16 +32,29 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-		<!-- Reactive (Optional if using WebFlux) -->
+		<!-- Spring Security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
-		<!-- GraphQL -->
+		<!-- JWT - JJWT -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-graphql</artifactId>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 
 		<!-- Data JPA -->
@@ -72,8 +87,8 @@
 
 		<!-- Validation -->
 		<dependency>
-			<groupId>jakarta.validation</groupId>
-			<artifactId>jakarta.validation-api</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
 		<!-- ModelMapper (DTO Mapping) -->
@@ -87,6 +102,12 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
+		<!-- HTTP Client for Google Maps API -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 
 		<!-- Dev Tools -->
@@ -103,6 +124,13 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- Twilio SMS (OTP delivery) -->
+		<dependency>
+			<groupId>com.twilio.sdk</groupId>
+			<artifactId>twilio</artifactId>
+			<version>10.6.1</version>
+		</dependency>
+
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -110,13 +138,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.graphql</groupId>
-			<artifactId>spring-graphql-test</artifactId>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -128,7 +151,71 @@
 
 	<build>
 		<plugins>
-			<!-- Compiler Plugin with Lombok Annotation Processing -->
+			<!-- ① Build the React frontend via npm -->
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>1.15.0</version>
+				<configuration>
+					<workingDirectory>${frontend.dir}</workingDirectory>
+					<installDirectory>${project.build.directory}/frontend-tools</installDirectory>
+				</configuration>
+				<executions>
+					<!-- Install Node + npm if not present -->
+					<execution>
+						<id>install node and npm</id>
+						<goals><goal>install-node-and-npm</goal></goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<nodeVersion>v20.15.0</nodeVersion>
+							<npmVersion>10.7.0</npmVersion>
+						</configuration>
+					</execution>
+					<!-- npm install -->
+					<execution>
+						<id>npm install</id>
+						<goals><goal>npm</goal></goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<arguments>install</arguments>
+						</configuration>
+					</execution>
+					<!-- npm run build -->
+					<execution>
+						<id>npm run build</id>
+						<goals><goal>npm</goal></goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<arguments>run build</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ② Copy the React dist output into Spring Boot static resources -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copy-frontend-dist</id>
+						<phase>process-resources</phase>
+						<goals><goal>copy-resources</goal></goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${frontend.dir}/dist</directory>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- ③ Compiler Plugin with Lombok Annotation Processing -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -146,7 +233,7 @@
 				</configuration>
 			</plugin>
 
-			<!-- Spring Boot Plugin -->
+			<!-- ④ Spring Boot Plugin -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

@@ -13,14 +13,13 @@ import java.util.Set;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhoneNumber(String phoneNumber);
 
-    //JPQL
-//    @Query("SELECT u FROM User u WHERE u.phoneNumber = :mobileNumber")
-//    User findUserByPhoneNumber(@Param("mobileNumber") String mobileNumber);
-
     //NATIVE QUERY (NORMAL SQL QUERY)
     @Query(value = "SELECT * FROM users WHERE phone_number = :mobileNumber", nativeQuery = true)
     User findUserByPhoneNumber(@Param("mobileNumber") String mobileNumber);
 
     @Query(value = "SELECT DISTINCT u.otp FROM users u", nativeQuery = true)
     Set<Integer> findOtps();
+
+    Optional<User> findByGoogleId(String googleId);
+    Optional<User> findByEmail(String email);
 }

@@ -1,5 +1,6 @@
 package com.TestSpringBoot.cbs.model.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Location {
-    private int x;
-    private int y;
+    // Human-readable address (display name)
+    private String address;
+
+    // Geographic coordinates
+    private double latitude;
+    private double longitude;
 }

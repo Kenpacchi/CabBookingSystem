@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -28,16 +30,28 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    // Geographic coordinates
     @Column
-    private Integer x;
+    private Double latitude;
 
     @Column
-    private Integer y;
+    private Double longitude;
 
+    // OTP login
     @Column
     private Integer otp;
 
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
+    @Column(name = "phone_verified")
+    private Boolean phoneVerified = false;
+
+    // Google OAuth
+    @Column(name = "google_id")
+    private String googleId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "is_riding")
-    private FlagTypeEnum isRiding;
+    private FlagTypeEnum isRiding = FlagTypeEnum.N;
 }

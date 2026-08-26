@@ -1,0 +1,416 @@
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --rapido-gold:        #FFD700;
+  --rapido-gold-dim:    rgba(255, 215, 0, 0.15);
+  --rapido-gold-border: rgba(255, 215, 0, 0.3);
+  --rapido-bg:          #0a0a0a;
+  --rapido-surface:     #111111;
+  --rapido-surface-2:   #1a1a1a;
+  --rapido-border:      rgba(255, 255, 255, 0.07);
+  --rapido-text:        #ffffff;
+  --rapido-text-muted:  rgba(255, 255, 255, 0.5);
+  --rapido-text-faint:  rgba(255, 255, 255, 0.25);
+  --rapido-green:       #4CAF50;
+  --rapido-red:         #FF5252;
+  --rapido-blue:        #4FC3F7;
+  --rapido-orange:      #FF9800;
+  --navbar-height:      56px;
+  --border-radius:      14px;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--rapido-bg);
+  color: var(--rapido-text);
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 215, 0, 0.3); border-radius: 4px; }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 { letter-spacing: -0.3px; }
+
+/* ── Input resets ────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--rapido-border);
+  color: var(--rapido-text);
+  border-radius: var(--border-radius);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--rapido-gold-border);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.08);
+}
+
+input::placeholder { color: var(--rapido-text-faint); }
+
+/* ── Button base ─────────────────────────────────────────────────────────── */
+button { font-family: inherit; cursor: pointer; transition: all 0.2s; }
+button:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #FFD700, #FFA000);
+  color: #111;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 13px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(255, 215, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+  border: 1px solid var(--rapido-border);
+  border-radius: var(--border-radius);
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Leaflet map dark ────────────────────────────────────────────────────── */
+.leaflet-container {
+  background: #1a1a2e;
+}
+
+/* Fix popup styling */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a !important;
+  color: white !important;
+  border: 1px solid rgba(255, 215, 0, 0.2) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-tip { background: #1a1a1a !important; }
+
+/* Hide default attribution for cleaner look */
+.leaflet-control-attribution {
+  background: rgba(0,0,0,0.5) !important;
+  color: rgba(255,255,255,0.3) !important;
+  font-size: 9px !important;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────────────────── */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--navbar-height);
+  background: rgba(10, 10, 10, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--rapido-border);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.navbar-logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--rapido-gold);
+  letter-spacing: -0.5px;
+}
+
+.navbar-logo span {
+  color: white;
+  font-weight: 400;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link {
+  color: var(--rapido-text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--rapido-gold);
+  background: var(--rapido-gold-dim);
+}
+
+.nav-logout {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--rapido-text-muted);
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nav-logout:hover {
+  border-color: var(--rapido-red);
+  color: var(--rapido-red);
+  background: rgba(255, 82, 82, 0.06);
+}
+
+/* ── Auth pages ──────────────────────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--rapido-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--rapido-surface);
+  border: 1px solid var(--rapido-border);
+  border-radius: 24px;
+  padding: 36px 32px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.auth-logo {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--rapido-gold);
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: var(--rapido-text-muted);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rapido-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--rapido-border);
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--rapido-gold-border);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.form-error {
+  color: var(--rapido-red);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ── Card component ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--rapido-surface);
+  border: 1px solid var(--rapido-border);
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: rgba(255, 215, 0, 0.15); }
+
+/* ── Badge ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-gold    { background: rgba(255,215,0,0.12); color: var(--rapido-gold); }
+.badge-green   { background: rgba(76,175,80,0.12); color: var(--rapido-green); }
+.badge-red     { background: rgba(255,82,82,0.12); color: var(--rapido-red); }
+.badge-orange  { background: rgba(255,152,0,0.12); color: var(--rapido-orange); }
+.badge-blue    { background: rgba(79,195,247,0.12); color: var(--rapido-blue); }
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+
+/* Radar pulse for driver search screen */
+@keyframes radarPulse {
+  0%   { transform: scale(0.8); opacity: 0.8; }
+  70%  { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Dot loader */
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+.dotLoader span {
+  display: inline-block;
+  width: 9px; height: 9px;
+  background: var(--rapido-gold);
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+.dotLoader span:nth-child(2) { animation-delay: 0.2s; }
+.dotLoader span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Driver marker pulse */
+@keyframes driverPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+
+/* Fade-in slide-up */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fadeSlideUp 0.35s ease forwards; }
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* Spin */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin { animation: spin 1s linear infinite; }
+
+/* Pulse glow for active ride */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(76, 175, 80, 0.4); }
+  50%       { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
+}
+
+/* ── Ride history page ────────────────────────────────────────────────────── */
+.history-page {
+  min-height: 100vh;
+  padding: var(--navbar-height) 0 0;
+  background: var(--rapido-bg);
+}
+
+.history-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--rapido-border);
+}
+
+.history-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 4px;
+}
+
+/* ── Login / signup link ─────────────────────────────────────────────────── */
+.auth-link {
+  color: var(--rapido-gold);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-link:hover { text-decoration: underline; }
+
+/* ── Toast / snackbar ────────────────────────────────────────────────────── */
+@keyframes toastIn {
+  from { transform: translateY(100px) scale(0.9); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--rapido-surface-2);
+  border: 1px solid var(--rapido-border);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 9999;
+  animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  white-space: nowrap;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card { padding: 28px 20px; }
+}
