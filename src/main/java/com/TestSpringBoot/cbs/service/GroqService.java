@@ -14,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 public class GroqService {
 
@@ -34,16 +33,6 @@ public class GroqService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // Guardrail keywords - topics the bot is allowed to answer
-    private static final Set<String> ALLOWED_TOPICS = Set.of(
-        "ride", "cab", "book", "cancel", "driver", "fare", "price", "payment",
-        "refund", "billing", "track", "otp", "account", "profile", "support",
-        "help", "lost", "item", "auto", "bike", "pickup", "drop", "location",
-        "rating", "complaint", "surge", "discount", "promo", "trip", "history",
-        "hello", "hi", "hey", "thank", "thanks", "bye", "problem", "issue",
-        "app", "login", "signup", "password", "phone", "number", "wait", "eta"
-    );
-
     /**
      * Get AI reply for a user message.
      * @param userPhone authenticated user's phone number
@@ -52,11 +41,6 @@ public class GroqService {
      * @return AI-generated reply string
      */
     public String getReply(String userPhone, String userMessage, List<Map<String, String>> sessionHistory) {
-        // Guardrail check
-        if (!isRelevantToSupport(userMessage)) {
-            return "I'm CABkaro's support assistant and can only help with ride-related questions — booking, payments, drivers, account issues, and trip history. For other queries, please contact us at 7974843494.";
-        }
-
         try {
             // Build user context
             String userContext = buildUserContext(userPhone);
@@ -119,50 +103,51 @@ public class GroqService {
     }
 
     /** Check if the message is relevant to cab support topics */
-    private boolean isRelevantToSupport(String message) {
-        if (message == null || message.trim().isEmpty()) return false;
-        String lower = message.toLowerCase();
-        // Short greetings always allowed
-        if (lower.length() < 15) return true;
-        // Check if any allowed topic keyword is present
-        return ALLOWED_TOPICS.stream().anyMatch(lower::contains);
-    }
-
     /** Build the system prompt with user context and guardrails */
     private String buildSystemPrompt(String userContext) {
         return "You are CABkaro's helpful support assistant. CABkaro is a cab booking app in India offering bike, auto-rickshaw, and cab rides.\n\n" +
                "RULES:\n" +
-               "1. Only answer questions about: cab booking, rides, payments, drivers, account issues, trip history, app features.\n" +
-               "2. If asked anything unrelated (politics, general knowledge, coding, etc.), politely decline and redirect to ride support.\n" +
-               "3. Be concise, friendly, and helpful. Use simple English.\n" +
-               "4. Always refer to support phone 7974843494 for urgent issues.\n" +
-               "5. Keep responses under 150 words.\n\n" +
+               "1. Be concise, friendly, and helpful. Use simple English or Hindi as appropriate.\n" +
+               "2. Always refer to support phone 7974843494 for urgent issues.\n" +
+               "3. Keep responses under 150 words.\n\n" +
                "USER CONTEXT:\n" + userContext;
     }
 
     /**
      * Get a short, natural driver-like AI reply for the passenger's message.
      * The driver persona is "Ramu bhaiya", a Varanasi cab driver.
-     * @param userMessage the passenger's message
-     * @return short AI-generated driver reply (1-2 sentences), or a fallback
+     * Conversation history is included so Groq has full context and gives varied replies.
      */
-    public String getDriverReply(String userMessage) {
+    public String getDriverReply(String userMessage, List<Map<String, String>> conversationHistory) {
         try {
             List<Map<String, String>> messages = new ArrayList<>();
+
+            // System prompt — driver persona with full freedom
             messages.add(Map.of("role", "system", "content",
-                "You are a cab driver in Varanasi, India named Ramu bhaiya. Reply naturally and briefly to the passenger as if you are driving. " +
-                "If they ask where you are, say you are nearby and almost there. If they ask to hurry, say you are going fast. " +
-                "If they say 'I can see you', say good, I can see you too. " +
-                "Keep replies to 1-2 sentences max. Match the language the passenger used (Hindi, English, or Hinglish). " +
-                "Sample Hindi reply: 'Haan bhai, aa raha hoon, bas 2 minute.' Sample English: 'Yes, almost there, 2 mins.' " +
-                "Never break character. Be friendly and natural."));
+                "You are Ramu bhaiya, a friendly cab driver in Varanasi, India. " +
+                "You are currently driving to pick up the passenger. " +
+                "Talk exactly like a real person — casual, warm, funny when appropriate. " +
+                "Use Hindi, English, or Hinglish naturally depending on what the passenger uses. " +
+                "You can talk about anything — music, weather, cricket, life, traffic, anything. " +
+                "Just be a real, engaging human driver having a genuine conversation. " +
+                "Keep replies short (1-3 sentences) like real chat messages."));
+
+            // Add last 8 messages of conversation history for context
+            if (conversationHistory != null && !conversationHistory.isEmpty()) {
+                int start = Math.max(0, conversationHistory.size() - 8);
+                messages.addAll(conversationHistory.subList(start, conversationHistory.size()));
+            }
+
+            // Add the new user message
             messages.add(Map.of("role", "user", "content", userMessage));
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", model);
             requestBody.put("messages", messages);
-            requestBody.put("max_tokens", 80);
-            requestBody.put("temperature", 0.8);
+            requestBody.put("max_tokens", 120);
+            requestBody.put("temperature", 1.0);
+            requestBody.put("presence_penalty", 0.8);   // penalise repeating topics
+            requestBody.put("frequency_penalty", 0.8);  // penalise repeating exact phrases
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -183,7 +168,15 @@ public class GroqService {
         } catch (Exception e) {
             log.warn("Driver AI reply failed: {}", e.getMessage());
         }
-        return "Haan, aa raha hoon! 2 minute.";
+        // Varied fallbacks so even offline it doesn't feel robotic
+        String[] fallbacks = {
+            "Haan bhai, bas pohonch raha hoon! 2 minute.",
+            "Traffic mein hoon, jaldi aaunga!",
+            "Almost there, 3 mins!",
+            "Aapke paas hi hoon, bas ek turn aur.",
+            "Haan dekh raha hoon aapko, aa raha hoon!"
+        };
+        return fallbacks[(int)(Math.random() * fallbacks.length)];
     }
 
     /** Fetch user's data and recent rides to build context */

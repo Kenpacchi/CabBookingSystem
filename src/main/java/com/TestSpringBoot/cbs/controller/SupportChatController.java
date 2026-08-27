@@ -167,9 +167,18 @@ public class SupportChatController {
             final String userText = text;
             final String finalSessionId = sessionId;
             final String finalPhone = phone;
+            // Fetch history EXCLUDING the message we just saved (it's passed separately as the final user turn)
+            List<ChatMessage> history = chatRepo.findBySessionIdOrderBySentAtAsc(finalSessionId);
+            final List<Map<String, String>> conversationHistory = history.stream()
+                .filter(m -> !m.getMessage().equals(userText) || !"USER".equalsIgnoreCase(m.getSender()))
+                .map(m -> Map.of(
+                    "role",    "USER".equalsIgnoreCase(m.getSender()) ? "user" : "assistant",
+                    "content", m.getMessage()
+                ))
+                .collect(Collectors.toList());
             new Thread(() -> {
                 try {
-                    String driverReply = groqService.getDriverReply(userText);
+                    String driverReply = groqService.getDriverReply(userText, conversationHistory);
                     ChatMessage driverMsg = ChatMessage.builder()
                             .sessionId(finalSessionId)
                             .userPhone(finalPhone)
