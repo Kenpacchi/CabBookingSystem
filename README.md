@@ -1,4 +1,4 @@
-# ⚡ Rapido Cab Booking System
+# ⚡ CABkaro
 
 A full-stack **Rapido-like ride-booking application** built with Spring Boot (backend) and React + Vite (frontend).
 
