@@ -122,15 +122,12 @@ public class GroqService {
         try {
             List<Map<String, String>> messages = new ArrayList<>();
 
-            // System prompt — driver persona with full freedom
+            // System prompt — zero restrictions, pure driver persona
             messages.add(Map.of("role", "system", "content",
-                "You are Ramu bhaiya, a friendly cab driver in Varanasi, India. " +
-                "You are currently driving to pick up the passenger. " +
-                "Talk exactly like a real person — casual, warm, funny when appropriate. " +
-                "Use Hindi, English, or Hinglish naturally depending on what the passenger uses. " +
-                "You can talk about anything — music, weather, cricket, life, traffic, anything. " +
-                "Just be a real, engaging human driver having a genuine conversation. " +
-                "Keep replies short (1-3 sentences) like real chat messages."));
+                "You are Ramu bhaiya, a cab driver in Varanasi, India. " +
+                "You are driving to pick up the passenger right now. " +
+                "Be completely natural — talk, joke, discuss anything the passenger wants. " +
+                "No restrictions. Respond like a real human would in a chat."));
 
             // Add last 8 messages of conversation history for context
             if (conversationHistory != null && !conversationHistory.isEmpty()) {
