@@ -90,10 +90,12 @@ public class BookingService {
 
     private RideBookingResponse bookNearestCab(User user, Location pickup, Location drop,
                                                double distanceKm, double fare, double surge) {
+        double userLat = user.getLatitude()  != null ? user.getLatitude()  : pickup.getLatitude();
+        double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return cabRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(user.getLatitude(), user.getLongitude(),
+                        distanceService.haversineDistance(userLat, userLng,
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
@@ -141,10 +143,12 @@ public class BookingService {
 
     private RideBookingResponse bookNearestBike(User user, Location pickup, Location drop,
                                                 double distanceKm, double fare, double surge) {
+        double userLat = user.getLatitude()  != null ? user.getLatitude()  : pickup.getLatitude();
+        double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return bikeRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(user.getLatitude(), user.getLongitude(),
+                        distanceService.haversineDistance(userLat, userLng,
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
@@ -191,10 +195,12 @@ public class BookingService {
 
     private RideBookingResponse bookNearestAuto(User user, Location pickup, Location drop,
                                                 double distanceKm, double fare, double surge) {
+        double userLat = user.getLatitude()  != null ? user.getLatitude()  : pickup.getLatitude();
+        double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return autoRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(user.getLatitude(), user.getLongitude(),
+                        distanceService.haversineDistance(userLat, userLng,
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
