@@ -176,7 +176,10 @@ function generateNearbyDrivers(lat, lng) {
 
 // ── Map helpers ───────────────────────────────────────────────────────────────
 function MapClickHandler({active,selectingFor,onPickup,onDrop}){
-  useMapEvents({click(e){if(!active)return;selectingFor==='pickup'?onPickup(e.latlng):onDrop(e.latlng)}})
+  useMapEvents({click(e){
+    // always active — if both pins set, re-set the drop
+    onPickup && onDrop && (selectingFor==='pickup'?onPickup(e.latlng):onDrop(e.latlng))
+  }})
   return null
 }
 function FitBounds({pickup,drop}){
@@ -518,16 +521,20 @@ export default function BookingPage() {
   const [cancelSecondsLeft, setCancelSecondsLeft] = useState(0)   // counts 60→0 after booking
   const [cancelling, setCancelling]               = useState(false)
   const [etaMinutes, setEtaMinutes]               = useState(null) // ETA to destination in minutes
+  const [rideOtp, setRideOtp]                     = useState(null) // 4-digit OTP per ride
+  const [driverPos, setDriverPos]                 = useState(null) // animated driver marker {lat,lng}
   // ── Quick location shortcuts ──────────────────────────────────────────────
   const [quickLocs, setQuickLocs]         = useState([])
   const [showQuickLocs, setShowQuickLocs] = useState(true)
-  // ── Location picker modal ─────────────────────────────────────────────────
-  const [locationModal, setLocationModal] = useState(null) // null | 'pickup' | 'drop'
-  const timerRef       = useRef(null)
-  const clockRef       = useRef(null)
-  const restoredRef    = useRef(false)
+  const timerRef         = useRef(null)
+  const clockRef         = useRef(null)
+  const restoredRef      = useRef(false)
   const cancelStartedRef = useRef(false)   // tracks if countdown has started this session
-  const cancelTimerRef = useRef(null)
+  const cancelTimerRef   = useRef(null)
+  const driverAnimRef    = useRef(null)    // interval for driver marker animation
+  const cancelInitRef    = useRef(null)    // holds restored remaining seconds synchronously (bypasses async state)
+  const rideBookedAtRef  = useRef(null)    // wall-clock ms when ride was booked — survives re-renders
+  const rideOtpRef       = useRef(null)    // OTP set on booking/restore — read synchronously before setStage
 
   // ── Live clock (updates every minute) ─────────────────────────────────────
   useEffect(() => {
@@ -543,11 +550,21 @@ export default function BookingPage() {
   }, [])
 
   // ── Cancel countdown — starts when stage becomes 'riding' ────────────────
-  // NOTE: cleanup resets cancelStartedRef so React StrictMode double-invoke works
   useEffect(() => {
     if (stage === 'riding' && !cancelStartedRef.current) {
       cancelStartedRef.current = true
-      setCancelSecondsLeft(60)
+
+      // Determine starting value:
+      //   cancelInitRef.current is set synchronously in the restore block before setStage fires,
+      //   so it's always the correct remaining seconds (or null for a fresh booking → use 60).
+      const startVal = cancelInitRef.current !== null ? cancelInitRef.current : 60
+      cancelInitRef.current = null  // consume it
+
+      setCancelSecondsLeft(startVal)
+
+      // If already expired, don't start a countdown
+      if (startVal <= 0) return
+
       const id = setInterval(() => {
         setCancelSecondsLeft(prev => {
           if (prev <= 1) { clearInterval(id); return -1 }
@@ -555,12 +572,11 @@ export default function BookingPage() {
         })
       }, 1000)
       cancelTimerRef.current = id
+
       return () => {
-        // cleanup: stop timer AND reset flag so StrictMode re-mount restarts correctly
         clearInterval(id)
         cancelTimerRef.current = null
         cancelStartedRef.current = false
-        setCancelSecondsLeft(0)
       }
     }
     if (stage !== 'riding') {
@@ -569,6 +585,58 @@ export default function BookingPage() {
       clearInterval(cancelTimerRef.current)
     }
   }, [stage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Set OTP when ride starts ───────────────────────────────────────────────
+  // Reads rideOtpRef (set synchronously before setStage) so refresh never regenerates the OTP.
+  useEffect(() => {
+    if (stage === 'riding') {
+      if (rideOtpRef.current) {
+        setRideOtp(rideOtpRef.current)
+        // Do NOT null the ref here — the persist effect may not have re-run yet with the new state value
+      }
+    } else {
+      setRideOtp(null)
+    }
+  }, [stage])
+
+  // ── Animate driver marker toward pickup during riding stage ──────────────
+  useEffect(() => {
+    if (stage !== 'riding' || !pickup) return
+
+    // Start the driver ~500–900m away from pickup in a random direction
+    const angleDeg = Math.random() * 360
+    const angleRad = (angleDeg * Math.PI) / 180
+    const distLat  = 0.007 * Math.cos(angleRad)   // ~700m in lat degrees
+    const distLng  = 0.007 * Math.sin(angleRad)
+    let curLat = pickup.lat + distLat
+    let curLng = pickup.lng + distLng
+
+    setDriverPos({ lat: curLat, lng: curLng })
+
+    const STEPS   = 80          // total steps to reach pickup
+    const JITTER  = 0.00008     // small random wobble per step (road-like feel)
+    let step = 0
+
+    driverAnimRef.current = setInterval(() => {
+      step++
+      const t = step / STEPS                           // 0 → 1
+      const smooth = t < 0.5 ? 2*t*t : -1+(4-2*t)*t  // ease-in-out
+      const jLat = (Math.random() - 0.5) * JITTER
+      const jLng = (Math.random() - 0.5) * JITTER
+      const newLat = curLat + (pickup.lat - curLat) * (1 - (1 - smooth))
+      const newLng = curLng + (pickup.lng - curLng) * (1 - (1 - smooth))
+      curLat = newLat + jLat
+      curLng = newLng + jLng
+      setDriverPos({ lat: curLat, lng: curLng })
+
+      if (step >= STEPS) {
+        clearInterval(driverAnimRef.current)
+        setDriverPos({ lat: pickup.lat, lng: pickup.lng })
+      }
+    }, 400)  // update every 400ms → full journey in ~32s
+
+    return () => clearInterval(driverAnimRef.current)
+  }, [stage, pickup]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── ETA fetch — Google Maps Routes API duration when both pins set ─────────
   // Runs on pickup/drop change (including during riding stage after restore)
@@ -635,8 +703,21 @@ export default function BookingPage() {
   useEffect(() => {
     const saved = loadRideFromStorage()
     if (saved && saved.stage === 'riding') {
+      // ── Compute cancel remaining FIRST, write to ref synchronously ──
+      // This MUST happen before setStage('riding') so the countdown useEffect
+      // reads cancelInitRef.current before it fires.
+      if (saved.rideBookedAt) {
+        const elapsedSec = Math.floor((Date.now() - saved.rideBookedAt) / 1000)
+        const remaining  = 60 - elapsedSec
+        cancelInitRef.current   = remaining > 0 ? remaining : -1
+        rideBookedAtRef.current = saved.rideBookedAt  // keep in ref for subsequent saves
+      } else {
+        // Old entry with no timestamp — don't punish the user, treat as expired
+        // so the cancelled window row is simply hidden (not shown as "unavailable")
+        cancelInitRef.current = -1
+      }
+
       // Re-hydrate all ride state
-      setStage('riding')
       setRideInfo(saved.rideInfo)
       setDriverFound(saved.driverFound)
       setPickup(saved.pickup)
@@ -647,9 +728,14 @@ export default function BookingPage() {
       setVehicle(saved.selectedVehicle || vehicleParam || 'BIKE')
       setRoadDistKm(saved.roadDistKm || null)
       setRoutePoints(saved.routePoints || [])
+      if (saved.rideOtp) setRideOtp(saved.rideOtp)
+      if (saved.rideOtp) rideOtpRef.current = saved.rideOtp  // sync ref so OTP effect doesn't regenerate
+
+      // setStage LAST — triggers the countdown useEffect, which now reads the correct ref
+      setStage('riding')
     }
     restoredRef.current = true
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Persist ride to localStorage whenever stage is 'riding' ───────────────
   useEffect(() => {
@@ -668,12 +754,14 @@ export default function BookingPage() {
         selectedVehicle,
         roadDistKm,
         routePoints,
+        rideOtp: rideOtp || rideOtpRef.current,  // fallback to ref if state hasn't settled yet
+        rideBookedAt: rideBookedAtRef.current,  // always correct — set on booking or restore
       })
     }
     if (stage === 'rating' || stage === 'map' || stage === 'select') {
       clearRideFromStorage()
     }
-  }, [stage, rideInfo])
+  }, [stage, rideInfo, rideOtp])
 
   // ── Auto-detect GPS ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -786,11 +874,15 @@ export default function BookingPage() {
 
   const handleMapPickup = useCallback(async ({ lat, lng }) => {
     const a = await reverseGeocode(lat, lng)
-    setPickup({ lat, lng, address: a }); setPickupQ(a); setClickMode(false)
+    setPickup({ lat, lng, address: a }); setPickupQ(a)
+    setClickMode(false)
+    // auto-advance to drop selection after pickup is set
+    setSelecting('drop')
   }, [])
   const handleMapDrop = useCallback(async ({ lat, lng }) => {
     const a = await reverseGeocode(lat, lng)
-    setDrop({ lat, lng, address: a }); setDropQ(a); setClickMode(false); setShowQuickLocs(false)
+    setDrop({ lat, lng, address: a }); setDropQ(a)
+    setClickMode(false); setShowQuickLocs(false)
   }, [])
 
   // ── Select a saved quick location as the drop point ───────────────────────
@@ -827,16 +919,25 @@ export default function BookingPage() {
       setRideInfo(newRideInfo)
       setDriverFound(newDriverFound)
       setNearbyDrivers([])
-      setStage('riding')   // ← triggers the cancel countdown useEffect
+
+      // Generate OTP and store in ref BEFORE setStage so the OTP effect reads it
+      const newOtp = String(Math.floor(1000 + Math.random() * 9000))
+      rideOtpRef.current = newOtp
 
       // Persist to localStorage immediately
+      const bookedAt = Date.now()
+      rideBookedAtRef.current = bookedAt
       saveRideToStorage({
         stage: 'riding',
         rideInfo: newRideInfo,
         driverFound: newDriverFound,
         pickup, drop, pickupQuery, dropQuery, estimates,
         selectedVehicle, roadDistKm, routePoints,
+        rideOtp: newOtp,
+        rideBookedAt: bookedAt,
       })
+
+      setStage('riding')   // ← triggers countdown + OTP effects (refs already set)
     } catch (e) {
       clearInterval(timerRef.current)
       alert(e.response?.data?.message || 'No drivers available. Try again.')
@@ -851,15 +952,14 @@ export default function BookingPage() {
   // ── Cancel ride ────────────────────────────────────────────────────────────
   const handleCancelRide = async () => {
     if (!rideInfo?.rideId || cancelling) return
-    if (cancelSecondsLeft <= 0) {
-      alert('Cancellation window has expired. Rides can only be cancelled within 60 seconds of booking.')
-      return
-    }
+    // Always allow cancel while the cancel row is visible (cancelSecondsLeft > 0)
     if (!window.confirm('Cancel this ride? You will not be charged.')) return
     setCancelling(true)
     try {
       await rideApi.cancelRide(rideInfo.rideId)
       clearRideFromStorage()
+      rideBookedAtRef.current = null
+      rideOtpRef.current = null
       setCancelSecondsLeft(0)
       setStage('map')
       setRideInfo(null)
@@ -917,14 +1017,32 @@ export default function BookingPage() {
   // ══ STAGE: RIDING ═════════════════════════════════════════════════════════
   if (stage === 'riding' && rideInfo) {
     const v = VEHICLES.find(v => v.type === selectedVehicle)
+
+    // Build a pulsing emoji icon for the driver's live position
+    const liveDriverIcon = new L.DivIcon({
+      html: `<div style="position:relative;display:inline-block">
+        <div style="position:absolute;inset:-6px;border-radius:50%;background:${v?.color || '#F59E0B'}22;
+          animation:driverPulse 1.4s ease-out infinite;"></div>
+        <div style="font-size:32px;line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4));
+          position:relative;z-index:1">${v?.emoji || '🚗'}</div>
+      </div>`,
+      iconSize: [38, 38], iconAnchor: [19, 19], className: '',
+    })
+
     return (
       <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#F5F7FA'}}>
         <div style={{flex:1,position:'relative'}}>
           <MapContainer center={pickup ? [pickup.lat, pickup.lng] : DEFAULT_CENTER} zoom={14} style={{width:'100%',height:'100%'}} zoomControl={false}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
             {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}><Popup>Pickup</Popup></Marker>}
-            {drop    && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>Drop</Popup></Marker>}
-            {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#F59E0B',weight:5,opacity:0.9}}/>}
+            {drop    && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>Drop-off</Popup></Marker>}
+            {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#1A202C',weight:5,opacity:0.85,dashArray:'8,4'}}/>}
+            {/* Live driver emoji marker — animates toward pickup */}
+            {driverPos && (
+              <Marker position={[driverPos.lat, driverPos.lng]} icon={liveDriverIcon}>
+                <Popup><b>{driverFound?.name}</b> · {v?.emoji} {v?.name}<br/>📍 Heading to your pickup</Popup>
+              </Marker>
+            )}
             {pickup && drop && <FitBounds pickup={pickup} drop={drop}/>}
           </MapContainer>
           <div style={SS.rideBadge}><span style={{color:'#059669',marginRight:6}}>●</span>RIDE IN PROGRESS</div>
@@ -948,6 +1066,40 @@ export default function BookingPage() {
             >ℹ️</button>
             <div style={SS.fareBig}>₹{fare}</div>
           </div>
+
+          {/* ── Ride OTP — share this with your driver ── */}
+          {rideOtp && (
+            <div style={SS.otpCard}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:'#7C3AED',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>
+                  🔐 Ride OTP
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  {rideOtp.split('').map((digit, i) => (
+                    <div key={i} style={SS.otpDigit}>{digit}</div>
+                  ))}
+                </div>
+                <div style={{fontSize:11,color:'#6B7280',marginTop:5}}>
+                  Share this OTP with your driver to start the ride
+                </div>
+              </div>
+              <button
+                style={SS.otpShareBtn}
+                title="Share OTP"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ title: 'Ride OTP', text: `Your CABkaro ride OTP is: ${rideOtp}` })
+                  } else {
+                    navigator.clipboard?.writeText(rideOtp)
+                    alert(`OTP ${rideOtp} copied to clipboard!`)
+                  }
+                }}
+              >
+                <span style={{fontSize:18}}>📤</span>
+                <span style={{fontSize:11,fontWeight:600}}>Share</span>
+              </button>
+            </div>
+          )}
 
           {/* ── Cancel ride row — shown right below driver header ── */}
           {cancelSecondsLeft > 0 && (
@@ -1007,16 +1159,23 @@ export default function BookingPage() {
               </div>
               <div style={SS.statL}>Now</div>
             </div>
-            <div style={SS.statBox}>
+            {/* Enhanced ETA stat box */}
+            <div style={{
+              ...SS.statBox,
+              background: etaMinutes ? 'linear-gradient(135deg,#F3E8FF,#EDE9FE)' : '#F5F7FA',
+              border: etaMinutes ? '1px solid #C4B5FD' : '1px solid #E2E8F0',
+            }}>
               {etaMinutes ? (
                 <>
-                  <div style={{...SS.statV, color:'#7C3AED', fontSize:14}}>
-                    {new Date(currentTime.getTime() + etaMinutes * 60000)
-                      .toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  <div style={{fontSize:11,color:'#7C3AED',fontWeight:700,marginBottom:2}}>
+                    🏁 ETA
                   </div>
-                  <div style={SS.statL}>
-                    <span>🕐</span>
-                    <span>Arrives ~{etaMinutes}m</span>
+                  <div style={{fontSize:17,fontWeight:800,color:'#6D28D9',lineHeight:1.1}}>
+                    {etaMinutes} min
+                  </div>
+                  <div style={{fontSize:11,color:'#7C3AED',marginTop:3,fontWeight:500}}>
+                    ~{new Date(currentTime.getTime() + etaMinutes * 60000)
+                        .toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </>
               ) : (
@@ -1042,7 +1201,7 @@ export default function BookingPage() {
             )}
             <button style={SS.chatBtn} onClick={() => setShowChat(true)}>💬 Chat</button>
             <button style={SS.payNowBtn} onClick={() => setShowPayment(true)}>💳 Pay</button>
-            <button style={SS.doneBtn} onClick={() => { clearRideFromStorage(); setStage('rating') }}>✓ Done</button>
+            <button style={SS.doneBtn} onClick={() => { clearRideFromStorage(); rideBookedAtRef.current = null; setStage('rating') }}>✓ Done</button>
           </div>
         </div>
 
@@ -1071,7 +1230,7 @@ export default function BookingPage() {
           <PaymentModal
             rideInfo={rideInfo}
             fare={fare || 0}
-            onSuccess={() => { setShowPayment(false); clearRideFromStorage(); setStage('rating') }}
+            onSuccess={() => { setShowPayment(false); clearRideFromStorage(); rideBookedAtRef.current = null; setStage('rating') }}
             onClose={() => setShowPayment(false)}
           />
         )}
@@ -1092,15 +1251,19 @@ export default function BookingPage() {
 
   // ══ STAGE: MAP / SELECT (main) ════════════════════════════════════════════
   return (
-  <>
     <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#F5F7FA',overflow:'hidden'}}>
       <div style={{position:'relative',flex:1}}>
         <MapContainer center={mapCenter} zoom={14} style={{width:'100%',height:'100%'}} zoomControl={false}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
-          <MapClickHandler active={clickMode} selectingFor={selectingFor} onPickup={handleMapPickup} onDrop={handleMapDrop}/>
+          <MapClickHandler
+            active={true}
+            selectingFor={clickMode ? selectingFor : (!pickup ? 'pickup' : 'drop')}
+            onPickup={handleMapPickup}
+            onDrop={handleMapDrop}
+          />
           {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}><Popup>{pickup.address}</Popup></Marker>}
           {drop   && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>{drop.address}</Popup></Marker>}
-          {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#F59E0B',weight:4,opacity:0.85}}/>}
+          {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#1A202C',weight:4,opacity:0.8,dashArray:'8,4'}}/>}
           {/* Only show driver emojis when no drop set and within 1km (already filtered) */}
           {!drop && pickup && routePoints.length === 0 && nearbyDrivers.map(d => (
             <Marker key={d.id} position={[d.lat, d.lng]} icon={makeDriverIcon(d.emoji)}>
@@ -1113,13 +1276,35 @@ export default function BookingPage() {
           <FitBounds pickup={pickup} drop={drop}/>
         </MapContainer>
 
-        {clickMode && (
-          <div style={SS.clickBanner}>
-            <div style={{width:10,height:10,borderRadius:'50%',background:selectingFor==='pickup'?'#059669':'#DC2626',marginRight:8,flexShrink:0}}/>
-            Tap map to set {selectingFor === 'pickup' ? 'pickup' : 'drop'}
-            <button style={{background:'none',border:'none',color:'#718096',cursor:'pointer',marginLeft:10,fontSize:16,lineHeight:1}} onClick={() => setClickMode(false)}>✕</button>
-          </div>
-        )}
+        {/* ── Always-visible map tap instruction banner ── */}
+        <div style={{
+          ...SS.clickBanner,
+          borderColor: clickMode
+            ? (selectingFor === 'pickup' ? '#BBF7D0' : '#FECACA')
+            : (!pickup ? '#BBF7D0' : '#FECACA'),
+          background: clickMode
+            ? (selectingFor === 'pickup' ? '#F0FFF4' : '#FFF5F5')
+            : (!pickup ? '#F0FFF4' : (!drop ? '#FFF5F5' : '#FFFBEB')),
+        }}>
+          <div style={{
+            width: 10, height: 10, borderRadius: '50%', marginRight: 8, flexShrink: 0,
+            background: clickMode
+              ? (selectingFor === 'pickup' ? '#059669' : '#DC2626')
+              : (!pickup ? '#059669' : (!drop ? '#DC2626' : '#F59E0B')),
+          }}/>
+          <span style={{fontSize:13, fontWeight:600, color:'#374151'}}>
+            {clickMode
+              ? `Tap map to set ${selectingFor === 'pickup' ? 'pickup 📍' : 'drop-off 📍'}`
+              : !pickup
+                ? 'Tap map to set pickup 📍'
+                : !drop
+                  ? 'Tap map to set drop-off 📍'
+                  : '✓ Both locations set — tap map to change drop-off'}
+          </span>
+          {clickMode && (
+            <button style={{background:'none',border:'none',color:'#718096',cursor:'pointer',marginLeft:8,fontSize:16,lineHeight:1}} onClick={() => setClickMode(false)}>✕</button>
+          )}
+        </div>
         {poi && poiMarkers.length > 0 && (
           <div style={SS.poiBanner}>
             <IconLocationPin size={13} color="#2563EB" style={{marginRight:4}}/>
@@ -1149,20 +1334,53 @@ export default function BookingPage() {
         {/* Pickup */}
         <div style={SS.locRow}>
           <div style={{...SS.locDot, background:'#059669'}}/>
+          <div style={{flex:1, position:'relative'}}>
+            <input
+              style={{
+                ...SS.locInput,
+                borderColor: pickup ? '#BBF7D0' : '#E2E8F0',
+                background: pickup ? '#F0FFF4' : '#FFFFFF',
+              }}
+              placeholder="Pickup location"
+              value={pickupQuery}
+              onChange={e => {
+                setPickupQ(e.target.value)
+                handleSearch(e.target.value, true)
+                if (!e.target.value) setPickup(null)
+              }}
+              onFocus={() => setSelecting('pickup')}
+            />
+            {pickupResults.length > 0 && (
+              <div style={SS.suggestions}>
+                {pickupResults.map((r, i) => (
+                  <div key={i} style={SS.suggestion} onClick={() => selectResult(r, true)}>
+                    <IconLocationPin size={12} color="#A0AEC0" style={{marginRight:6,flexShrink:0}}/>
+                    {r.display_name.substring(0, 60)}…
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Pin on map toggle */}
           <button
-            style={{...SS.locBtn, borderColor: pickup ? '#BBF7D0' : '#E2E8F0', background: pickup ? '#F0FFF4' : '#FAFAFA'}}
-            onClick={() => setLocationModal('pickup')}
+            style={{
+              ...SS.mapPinBtn,
+              background: (clickMode && selectingFor==='pickup') ? '#059669' : '#F0FFF4',
+              borderColor: '#BBF7D0',
+            }}
+            title="Tap map to set pickup"
+            onClick={() => { setSelecting('pickup'); setClickMode(c => !(c && selectingFor==='pickup')) }}
           >
-            <span style={{flex:1, textAlign:'left', color: pickup ? '#1A202C' : '#A0AEC0', fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-              {pickup ? pickup.address : 'Set pickup location'}
-            </span>
-            <IconMap size={15} color={pickup ? '#059669' : '#A0AEC0'} />
+            <span style={{fontSize:14, filter:(clickMode && selectingFor==='pickup')?'brightness(10)':'none'}}>📍</span>
           </button>
-          <button style={SS.gpsBtn} title="Detect GPS" onClick={() => navigator.geolocation?.getCurrentPosition(async p => {
-            const { latitude: lat, longitude: lng } = p.coords
-            const a = await reverseGeocode(lat, lng)
-            setPickup({ lat, lng, address: a }); setPickupQ(a)
-          })}>
+          {/* GPS */}
+          <button style={SS.gpsBtn} title="Use my location" onClick={() =>
+            navigator.geolocation?.getCurrentPosition(async p => {
+              const { latitude: lat, longitude: lng } = p.coords
+              const a = await reverseGeocode(lat, lng)
+              setPickup({ lat, lng, address: a }); setPickupQ(a)
+            })
+          }>
             <IconGPS size={16} color="#F59E0B"/>
           </button>
         </div>
@@ -1170,18 +1388,51 @@ export default function BookingPage() {
         {/* Drop */}
         <div style={SS.locRow}>
           <div style={{...SS.locDot, background:'#DC2626'}}/>
+          <div style={{flex:1, position:'relative'}}>
+            <input
+              style={{
+                ...SS.locInput,
+                borderColor: drop ? '#FECACA' : '#E2E8F0',
+                background: drop ? '#FFF5F5' : '#FFFFFF',
+              }}
+              placeholder="Where to?"
+              value={dropQuery}
+              onChange={e => {
+                setDropQ(e.target.value)
+                handleSearch(e.target.value, false)
+                if (!e.target.value) { setDrop(null); setShowQuickLocs(true) }
+              }}
+              onFocus={() => setSelecting('drop')}
+            />
+            {dropResults.length > 0 && (
+              <div style={SS.suggestions}>
+                {dropResults.map((r, i) => (
+                  <div key={i} style={SS.suggestion}
+                    onClick={() => { selectResult(r, false); setShowQuickLocs(false) }}>
+                    <IconLocationPin size={12} color="#A0AEC0" style={{marginRight:6,flexShrink:0}}/>
+                    {r.display_name.substring(0, 60)}…
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Pin on map toggle */}
           <button
-            style={{...SS.locBtn, borderColor: drop ? '#FECACA' : '#E2E8F0', background: drop ? '#FFF5F5' : '#FAFAFA'}}
-            onClick={() => { setLocationModal('drop'); setShowQuickLocs(false) }}
+            style={{
+              ...SS.mapPinBtn,
+              background: (clickMode && selectingFor==='drop') ? '#DC2626' : '#FFF5F5',
+              borderColor: '#FECACA',
+            }}
+            title="Tap map to set drop-off"
+            onClick={() => { setSelecting('drop'); setClickMode(c => !(c && selectingFor==='drop')) }}
           >
-            <span style={{flex:1, textAlign:'left', color: drop ? '#1A202C' : '#A0AEC0', fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-              {drop ? drop.address : 'Where to?'}
-            </span>
-            <IconMap size={15} color={drop ? '#DC2626' : '#A0AEC0'} />
+            <span style={{fontSize:14, filter:(clickMode && selectingFor==='drop')?'brightness(10)':'none'}}>📍</span>
           </button>
+          {/* Clear drop */}
           {drop && (
             <button style={{...SS.iconBtn, borderColor:'#FECACA', background:'#FFF5F5'}}
-              title="Clear drop" onClick={() => { setDrop(null); setDropQ(''); setShowQuickLocs(true) }}>
+              title="Clear destination"
+              onClick={() => { setDrop(null); setDropQ(''); setShowQuickLocs(true) }}>
               <span style={{fontSize:14, color:'#DC2626', lineHeight:1}}>✕</span>
             </button>
           )}
@@ -1305,23 +1556,6 @@ export default function BookingPage() {
         )}
       </div>
     </div>
-
-    {/* ── Location Picker Modal ── */}
-    {locationModal && (
-      <LocationPickerModal
-        forField={locationModal}
-        onClose={() => setLocationModal(null)}
-        onConfirm={(loc) => {
-          if (locationModal === 'pickup') {
-            setPickup(loc); setPickupQ(loc.address)
-          } else {
-            setDrop(loc); setDropQ(loc.address); setShowQuickLocs(false)
-          }
-          setLocationModal(null)
-        }}
-      />
-    )}
-  </>
   )
 }
 
@@ -1336,10 +1570,11 @@ const SS = {
   },
   clickBanner: {
     position:'absolute',top:14,left:'50%',transform:'translateX(-50%)',zIndex:999,
-    background:'#FFFFFF',border:'1px solid #FCD34D',color:'#1A202C',
-    borderRadius:20,padding:'10px 20px',fontSize:14,
+    background:'#FFFFFF',border:'1.5px solid #E2E8F0',color:'#1A202C',
+    borderRadius:20,padding:'9px 18px',fontSize:13,
     display:'flex',alignItems:'center',whiteSpace:'nowrap',
     boxShadow:'0 4px 16px rgba(0,0,0,0.1)',
+    transition:'all 0.2s',
   },
   poiBanner: {
     position:'absolute',bottom:10,left:'50%',transform:'translateX(-50%)',zIndex:999,
@@ -1363,11 +1598,10 @@ const SS = {
   panelTitle: {display:'flex',alignItems:'center',gap:8,fontSize:16,fontWeight:700,color:'#1A202C',marginBottom:14},
   locRow: {display:'flex',alignItems:'center',gap:10,marginBottom:10},
   locDot: {width:12,height:12,borderRadius:'50%',flexShrink:0},
-  locBtn: {
-    flex:1, display:'flex', alignItems:'center', gap:8,
-    border:'1.5px solid', borderRadius:12,
-    padding:'10px 14px', cursor:'pointer',
-    minWidth:0, transition:'all 0.15s',
+  mapPinBtn: {
+    width:36, height:36, border:'1.5px solid', borderRadius:10,
+    display:'flex', alignItems:'center', justifyContent:'center',
+    cursor:'pointer', flexShrink:0, transition:'all 0.15s',
   },
   locInput: {
     width:'100%',background:'#FFFFFF',border:'1px solid #E2E8F0',
@@ -1548,5 +1782,26 @@ const SS = {
     background:'none',border:'none',color:'#F59E0B',
     fontSize:12,fontWeight:600,cursor:'pointer',
     padding:'2px 0',
+  },
+  // ── Ride OTP card ──────────────────────────────────────────────────────────
+  otpCard: {
+    display:'flex', alignItems:'center', justifyContent:'space-between',
+    background:'linear-gradient(135deg,#F5F3FF,#EDE9FE)',
+    border:'2px solid #C4B5FD', borderRadius:14,
+    padding:'12px 14px', marginBottom:12,
+    boxShadow:'0 2px 12px rgba(124,58,237,0.12)',
+  },
+  otpDigit: {
+    width:36, height:44, background:'#FFFFFF',
+    border:'2px solid #7C3AED', borderRadius:10,
+    display:'flex', alignItems:'center', justifyContent:'center',
+    fontSize:22, fontWeight:800, color:'#4C1D95',
+    boxShadow:'0 2px 8px rgba(124,58,237,0.15)',
+  },
+  otpShareBtn: {
+    display:'flex', flexDirection:'column', alignItems:'center', gap:3,
+    background:'#7C3AED', border:'none', color:'white',
+    borderRadius:12, padding:'10px 14px', cursor:'pointer',
+    boxShadow:'0 4px 12px rgba(124,58,237,0.3)', flexShrink:0,
   },
 }
