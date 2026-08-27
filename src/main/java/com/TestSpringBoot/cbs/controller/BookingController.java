@@ -102,7 +102,64 @@ public class BookingController {
     }
 
     /**
-     * GET /api/ride/driver-details/{rideId}
+     * POST /api/ride/cancel/{rideId}
+     * Cancel an active ride. Only allowed within 60 seconds of booking.
+     */
+    @PostMapping("/cancel/{rideId}")
+    public ResponseEntity<Map<String, Object>> cancelRide(
+            @PathVariable Long rideId,
+            Authentication auth) {
+
+        String phoneNumber = auth != null ? auth.getName() : getPhoneFromJwt();
+        User user = userService.getUserByPhone(phoneNumber);
+
+        return rideHistoryRepo.findById(rideId).map(ride -> {
+            // Ownership check
+            if (!ride.getUserId().equals(user.getId())) {
+                return ResponseEntity.status(403)
+                        .<Map<String, Object>>body(java.util.Map.of(
+                                "success", false,
+                                "message", "You are not allowed to cancel this ride."));
+            }
+
+            // Status check — only IN_PROGRESS rides can be cancelled
+            if (!"IN_PROGRESS".equals(ride.getStatus())) {
+                return ResponseEntity.badRequest()
+                        .<Map<String, Object>>body(java.util.Map.of(
+                                "success", false,
+                                "message", "This ride cannot be cancelled (status: " + ride.getStatus() + ")."));
+            }
+
+            // Time window check — only within 60 seconds of booking
+            if (ride.getBookedAt() != null) {
+                long secondsElapsed = java.time.Duration.between(
+                        ride.getBookedAt(), java.time.LocalDateTime.now()).getSeconds();
+                if (secondsElapsed > 60) {
+                    return ResponseEntity.badRequest()
+                            .<Map<String, Object>>body(java.util.Map.of(
+                                    "success", false,
+                                    "message", "Cancellation window has expired. Rides can only be cancelled within 60 seconds of booking.",
+                                    "secondsElapsed", secondsElapsed));
+                }
+            }
+
+            // Cancel the ride
+            ride.setStatus("CANCELLED");
+            ride.setCompletedAt(java.time.LocalDateTime.now());
+            rideHistoryRepo.save(ride);
+
+            // Free up the user
+            user.setIsRiding(com.TestSpringBoot.cbs.model.enums.FlagTypeEnum.N);
+            userService.save(user);
+
+            return ResponseEntity.ok()
+                    .<Map<String, Object>>body(java.util.Map.of(
+                            "success", true,
+                            "message", "Ride cancelled successfully."));
+        }).orElseGet(() -> ResponseEntity.notFound().<Map<String, Object>>build());
+    }
+
+    /**
      * Returns driver profile info for the given ride.
      */
     @GetMapping("/driver-details/{rideId}")

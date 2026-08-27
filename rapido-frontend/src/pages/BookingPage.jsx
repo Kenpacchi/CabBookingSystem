@@ -233,15 +233,97 @@ export default function BookingPage() {
   const [showDriverInfo, setShowDriverInfo] = useState(false)
   const [roadDistKm, setRoadDistKm]       = useState(null)
   const [currentTime, setCurrentTime]     = useState(new Date())
-  const timerRef    = useRef(null)
-  const clockRef    = useRef(null)
-  const restoredRef = useRef(false)
+  const [cancelSecondsLeft, setCancelSecondsLeft] = useState(0)   // counts 60→0 after booking
+  const [cancelling, setCancelling]               = useState(false)
+  const [etaMinutes, setEtaMinutes]               = useState(null) // ETA to destination in minutes
+  const timerRef       = useRef(null)
+  const clockRef       = useRef(null)
+  const restoredRef    = useRef(false)
+  const cancelStartedRef = useRef(false)   // tracks if countdown has started this session
+  const cancelTimerRef = useRef(null)
 
   // ── Live clock (updates every minute) ─────────────────────────────────────
   useEffect(() => {
     clockRef.current = setInterval(() => setCurrentTime(new Date()), 30000)
     return () => clearInterval(clockRef.current)
   }, [])
+
+  // ── Cancel countdown — starts when stage becomes 'riding' ────────────────
+  // NOTE: cleanup resets cancelStartedRef so React StrictMode double-invoke works
+  useEffect(() => {
+    if (stage === 'riding' && !cancelStartedRef.current) {
+      cancelStartedRef.current = true
+      setCancelSecondsLeft(60)
+      const id = setInterval(() => {
+        setCancelSecondsLeft(prev => {
+          if (prev <= 1) { clearInterval(id); return -1 }
+          return prev - 1
+        })
+      }, 1000)
+      cancelTimerRef.current = id
+      return () => {
+        // cleanup: stop timer AND reset flag so StrictMode re-mount restarts correctly
+        clearInterval(id)
+        cancelTimerRef.current = null
+        cancelStartedRef.current = false
+        setCancelSecondsLeft(0)
+      }
+    }
+    if (stage !== 'riding') {
+      cancelStartedRef.current = false
+      setCancelSecondsLeft(0)
+      clearInterval(cancelTimerRef.current)
+    }
+  }, [stage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── ETA fetch — Google Maps Routes API duration when both pins set ─────────
+  // Runs on pickup/drop change (including during riding stage after restore)
+  useEffect(() => {
+    if (!pickup || !drop || !GMAPS_KEY) return
+    const fetchEta = async () => {
+      try {
+        const body = {
+          origin:      { location: { latLng: { latitude: pickup.lat, longitude: pickup.lng } } },
+          destination: { location: { latLng: { latitude: drop.lat,   longitude: drop.lng   } } },
+          travelMode: 'DRIVE',
+          routingPreference: 'TRAFFIC_AWARE',
+          languageCode: 'en-US', units: 'METRIC',
+        }
+        const r = await fetch(
+          `https://routes.googleapis.com/directions/v2:computeRoutes?key=${GMAPS_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Goog-FieldMask': 'routes.duration' },
+            body: JSON.stringify(body),
+          }
+        )
+        const data = await r.json()
+        if (data.routes?.[0]?.duration) {
+          // duration comes as "Xs" e.g. "1245s"
+          const secs = parseInt(data.routes[0].duration.replace('s', ''), 10)
+          setEtaMinutes(Math.ceil(secs / 60))
+        }
+      } catch {}
+    }
+    fetchEta()
+  }, [pickup, drop]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── ETA from OSRM when no Google key ──────────────────────────────────────
+  useEffect(() => {
+    if (!pickup || !drop || GMAPS_KEY) return
+    const fetchOsrmEta = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${pickup.lng},${pickup.lat};${drop.lng},${drop.lat}?overview=false`
+        const r = await fetch(url)
+        const data = await r.json()
+        if (data.routes?.[0]?.duration) {
+          setEtaMinutes(Math.ceil(data.routes[0].duration / 60))
+        }
+      } catch {}
+    }
+    fetchOsrmEta()
+  }, [pickup, drop]) // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ── Pre-set drop from query params (Quick Go saved location) ──────────────
   useEffect(() => {
@@ -439,7 +521,7 @@ export default function BookingPage() {
       setRideInfo(newRideInfo)
       setDriverFound(newDriverFound)
       setNearbyDrivers([])
-      setStage('riding')
+      setStage('riding')   // ← triggers the cancel countdown useEffect
 
       // Persist to localStorage immediately
       saveRideToStorage({
@@ -459,6 +541,37 @@ export default function BookingPage() {
   }
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+
+  // ── Cancel ride ────────────────────────────────────────────────────────────
+  const handleCancelRide = async () => {
+    if (!rideInfo?.rideId || cancelling) return
+    if (cancelSecondsLeft <= 0) {
+      alert('Cancellation window has expired. Rides can only be cancelled within 60 seconds of booking.')
+      return
+    }
+    if (!window.confirm('Cancel this ride? You will not be charged.')) return
+    setCancelling(true)
+    try {
+      await rideApi.cancelRide(rideInfo.rideId)
+      clearRideFromStorage()
+      setCancelSecondsLeft(0)
+      setStage('map')
+      setRideInfo(null)
+      setDriverFound(null)
+      setPickup(null)
+      setDrop(null)
+      setPickupQ('')
+      setDropQ('')
+      setEstimates(null)
+      setRoutePoints([])
+    } catch (e) {
+      const msg = e.response?.data?.message || 'Could not cancel ride. Please try again.'
+      alert(msg)
+    } finally {
+      setCancelling(false)
+    }
+  }
+
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const fare         = estimates ? estimates[VEHICLES.find(v => v.type === selectedVehicle)?.fareKey] : null
@@ -511,7 +624,7 @@ export default function BookingPage() {
           <div style={SS.rideBadge}><span style={{color:'#059669',marginRight:6}}>●</span>RIDE IN PROGRESS</div>
         </div>
 
-        <div style={SS.driverCard}>
+        <div style={{...SS.driverCard, overflowY:'auto', maxHeight:'55vh'}}>
           <div style={SS.driverTop}>
             <div style={SS.driverAva}><v.Icon size={26} color={v.color}/></div>
             <div style={{flex:1}}>
@@ -529,6 +642,41 @@ export default function BookingPage() {
             >ℹ️</button>
             <div style={SS.fareBig}>₹{fare}</div>
           </div>
+
+          {/* ── Cancel ride row — shown right below driver header ── */}
+          {cancelSecondsLeft > 0 && (
+            <div style={SS.cancelRideRow}>
+              <div style={SS.cancelRideInfo}>
+                <span style={{
+                  ...SS.cancelRideTimer,
+                  color: cancelSecondsLeft <= 10 ? '#DC2626' : '#EA580C',
+                }}>
+                  {cancelSecondsLeft}s
+                </span>
+                <div style={{display:'flex',flexDirection:'column',gap:1}}>
+                  <span style={{fontSize:13,fontWeight:600,color:'#9A3412'}}>Cancel window open</span>
+                  <span style={SS.cancelRideHint}>Free cancellation · closes in {cancelSecondsLeft}s</span>
+                </div>
+              </div>
+              <button
+                style={{ ...SS.cancelRideBtn, opacity: cancelling ? 0.6 : 1 }}
+                onClick={handleCancelRide}
+                disabled={cancelling}
+              >
+                {cancelling ? 'Cancelling…' : '✕ Cancel'}
+              </button>
+            </div>
+          )}
+          {cancelSecondsLeft === -1 && (
+            <div style={SS.cancelRideExpired}>
+              <span style={{fontSize:16}}>🔒</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:12,fontWeight:600,color:'#6B7280'}}>Cancellation unavailable</div>
+                <div style={{fontSize:11,color:'#9CA3AF'}}>Free cancel window (60s) expired</div>
+              </div>
+              <button style={SS.cancelRideBtnDisabled} disabled>✕ Cancel</button>
+            </div>
+          )}
 
           <div style={SS.routeSummary}>
             <div style={SS.routeRow2}><div style={{...SS.rDot,background:'#059669'}}/><div><div style={{fontSize:10,color:'#A0AEC0',marginBottom:2}}>PICKUP</div><div style={{fontSize:13,color:'#1A202C'}}>{pickup?.address?.substring(0,45)}</div></div></div>
@@ -551,11 +699,26 @@ export default function BookingPage() {
               <div style={{...SS.statV, color:'#2563EB', fontSize:15}}>
                 {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <div style={SS.statL}>Time</div>
+              <div style={SS.statL}>Now</div>
             </div>
             <div style={SS.statBox}>
-              <div style={{...SS.statV, color:'#059669'}}>ACTIVE</div>
-              <div style={SS.statL}>Status</div>
+              {etaMinutes ? (
+                <>
+                  <div style={{...SS.statV, color:'#7C3AED', fontSize:14}}>
+                    {new Date(currentTime.getTime() + etaMinutes * 60000)
+                      .toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div style={SS.statL}>
+                    <span>🕐</span>
+                    <span>Arrives ~{etaMinutes}m</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{...SS.statV, color:'#059669', fontSize:13}}>ACTIVE</div>
+                  <div style={SS.statL}>Status</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -981,4 +1144,32 @@ const SS = {
     boxShadow:'0 4px 16px rgba(0,0,0,0.25)',
   },
   doneBtn: {flex:1.5,background:'linear-gradient(135deg, #059669, #047857)',border:'none',color:'white',borderRadius:12,padding:12,fontSize:14,fontWeight:700,cursor:'pointer'},
+  // Cancel ride row
+  cancelRideRow: {
+    display:'flex',alignItems:'center',justifyContent:'space-between',
+    background:'#FFF7ED',border:'1px solid #FED7AA',borderRadius:12,
+    padding:'10px 14px',marginBottom:12,gap:10,
+  },
+  cancelRideInfo: {display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0},
+  cancelRideTimer: {
+    fontSize:18,fontWeight:800,color:'#EA580C',
+    minWidth:36,textAlign:'center',fontFamily:'monospace',
+  },
+  cancelRideHint: {fontSize:12,color:'#9A3412',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'},
+  cancelRideBtn: {
+    background:'#DC2626',border:'none',color:'#FFFFFF',
+    borderRadius:10,padding:'9px 14px',fontSize:13,fontWeight:700,
+    cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,
+    boxShadow:'0 2px 8px rgba(220,38,38,0.3)',transition:'opacity 0.2s',
+  },
+  cancelRideExpired: {
+    display:'flex',alignItems:'center',gap:10,
+    background:'#F9FAFB',border:'1px solid #E5E7EB',borderRadius:12,
+    padding:'10px 14px',marginBottom:12,
+  },
+  cancelRideBtnDisabled: {
+    background:'#E5E7EB',border:'none',color:'#9CA3AF',
+    borderRadius:10,padding:'9px 14px',fontSize:13,fontWeight:700,
+    cursor:'not-allowed',whiteSpace:'nowrap',flexShrink:0,
+  },
 }

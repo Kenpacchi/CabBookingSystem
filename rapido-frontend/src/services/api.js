@@ -116,6 +116,12 @@ export const rideApi = {
 
   /** Get all reports submitted by the logged-in user */
   getMyReports: () => api.get('/ride/reports'),
+
+  /**
+   * Cancel an active ride. Only allowed within 60 seconds of booking.
+   * @param {number} rideId
+   */
+  cancelRide: (rideId) => api.post(`/ride/cancel/${rideId}`),
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
