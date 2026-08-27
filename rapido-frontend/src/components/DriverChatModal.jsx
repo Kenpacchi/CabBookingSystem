@@ -15,6 +15,7 @@ export default function DriverChatModal({ rideInfo, driverFound, onClose }) {
   const rideId      = rideInfo?.rideId
   const driverName  = driverFound?.name  || rideInfo?.driverName  || 'Driver'
   const driverPhone = driverFound?.phone || rideInfo?.driverPhone || rideInfo?.driverMobileNumber || ''
+  const pickupAddr  = rideInfo?.pickupAddress || rideInfo?.pickup?.address || ''
 
   // ── Single source of truth: messages come ONLY from backend poll ─────────
   const [messages, setMessages]   = useState([])
@@ -81,7 +82,7 @@ export default function DriverChatModal({ rideInfo, driverFound, onClose }) {
     setInput('')
     setSending(true)
 
-    api.post('/chat/driver-message', { rideId, message: msg, sender: 'USER' })
+    api.post('/chat/driver-message', { rideId, message: msg, sender: 'USER', driverName, pickupAddress: pickupAddr })
       .then(() => {
         // Show typing indicator while AI generates reply
         setAiTyping(true)

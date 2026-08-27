@@ -1217,7 +1217,7 @@ export default function BookingPage() {
         {/* Driver Chat Modal */}
         {showChat && (
           <DriverChatModal
-            rideInfo={rideInfo}
+            rideInfo={{...rideInfo, pickupAddress: pickup?.address}}
             driverFound={{
               ...driverFound,
               phone: rideInfo?.driverPhone || rideInfo?.driverMobileNumber || driverFound?.phone || '',

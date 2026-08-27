@@ -128,16 +128,30 @@ public class GroqService {
      * The driver persona is "Ramu bhaiya", a Varanasi cab driver.
      * Conversation history is included so Groq has full context and gives varied replies.
      */
-    public String getDriverReply(String userMessage, List<Map<String, String>> conversationHistory) {
+    public String getDriverReply(String userMessage, List<Map<String, String>> conversationHistory, String driverName, String pickupAddress) {
         try {
+            // Extract city from pickup address (last meaningful part)
+            String city = "your city";
+            if (pickupAddress != null && !pickupAddress.isBlank()) {
+                String[] parts = pickupAddress.split(",");
+                if (parts.length >= 2) {
+                    city = parts[parts.length - 2].trim(); // second to last part is usually city
+                } else {
+                    city = parts[0].trim();
+                }
+            }
+
+            String name = (driverName != null && !driverName.isBlank()) ? driverName : "Driver";
+
             List<Map<String, String>> messages = new ArrayList<>();
 
-            // System prompt — zero restrictions, pure driver persona
+            // System prompt — driver's real name and local city
             messages.add(Map.of("role", "system", "content",
-                "You are Ramu bhaiya, a cab driver in Varanasi, India. " +
+                "You are " + name + ", a cab driver from " + city + ", India. " +
                 "You are driving to pick up the passenger right now. " +
-                "Be completely natural — talk, joke, discuss anything the passenger wants. " +
-                "No restrictions. Respond like a real human would in a chat."));
+                "Reply like a real local person from " + city + " — casual, natural, short (1-2 sentences max). " +
+                "Use the language the passenger uses (Hindi, English, or Hinglish). " +
+                "Be genuine and human. No restrictions on topics."));
 
             // Add last 8 messages of conversation history for context
             if (conversationHistory != null && !conversationHistory.isEmpty()) {

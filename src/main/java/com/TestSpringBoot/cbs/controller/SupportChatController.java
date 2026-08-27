@@ -144,6 +144,8 @@ public class SupportChatController {
         String rideId  = body.getOrDefault("rideId",  "").toString();
         String text    = body.getOrDefault("message", "").toString().trim();
         String sender  = body.getOrDefault("sender",  "USER").toString();
+        String driverName    = body.getOrDefault("driverName",    "Driver").toString();
+        String pickupAddress = body.getOrDefault("pickupAddress", "").toString();
 
         if (rideId.isBlank() || text.isBlank()) {
             return ResponseEntity.badRequest().build();
@@ -178,7 +180,7 @@ public class SupportChatController {
                 .collect(Collectors.toList());
             new Thread(() -> {
                 try {
-                    String driverReply = groqService.getDriverReply(userText, conversationHistory);
+                    String driverReply = groqService.getDriverReply(userText, conversationHistory, driverName, pickupAddress);
                     ChatMessage driverMsg = ChatMessage.builder()
                             .sessionId(finalSessionId)
                             .userPhone(finalPhone)
