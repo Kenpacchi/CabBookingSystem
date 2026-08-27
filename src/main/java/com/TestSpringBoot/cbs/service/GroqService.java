@@ -33,6 +33,12 @@ public class GroqService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        log.info("GroqService initialized — model: {}, apiKey present: {}, url: {}",
+            model, (apiKey != null && !apiKey.isBlank()), apiUrl);
+    }
+
     /**
      * Get AI reply for a user message.
      * @param userPhone authenticated user's phone number
@@ -96,7 +102,8 @@ public class GroqService {
                 }
             }
         } catch (Exception e) {
-            log.warn("Groq API call failed: {}", e.getMessage());
+            log.error("Groq API call failed — model: {}, apiKey present: {}, error: {}",
+                model, (apiKey != null && !apiKey.isBlank()), e.getMessage(), e);
         }
 
         // Fallback
