@@ -67,7 +67,8 @@ public class GroqService {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", model);
             requestBody.put("messages", messages);
-            requestBody.put("max_tokens", 300);
+            requestBody.put("max_tokens", 120);
+            requestBody.put("temperature", 0.5);
             requestBody.put("temperature", 0.7);
 
             // Set headers
@@ -105,11 +106,13 @@ public class GroqService {
     /** Check if the message is relevant to cab support topics */
     /** Build the system prompt with user context and guardrails */
     private String buildSystemPrompt(String userContext) {
-        return "You are CABkaro's helpful support assistant. CABkaro is a cab booking app in India offering bike, auto-rickshaw, and cab rides.\n\n" +
+        return "You are CABkaro's support assistant. CABkaro is a cab booking app in India (bike, auto, cab).\n\n" +
                "RULES:\n" +
-               "1. Be concise, friendly, and helpful. Use simple English or Hindi as appropriate.\n" +
-               "2. Always refer to support phone 7974843494 for urgent issues.\n" +
-               "3. Keep responses under 150 words.\n\n" +
+               "1. Reply in 1-3 short sentences only. Be direct and clear.\n" +
+               "2. Use simple language a regular user can understand — no technical jargon.\n" +
+               "3. Be professional, warm and helpful.\n" +
+               "4. For urgent issues, mention support phone: 7974843494.\n" +
+               "5. Never write long paragraphs.\n\n" +
                "USER CONTEXT:\n" + userContext;
     }
 
