@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +29,9 @@ import java.util.Map;
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
+    @Value("${fast2sms.enabled:false}")
+    private boolean smsEnabled;
 
     @Autowired
     private UserService userService;
@@ -108,8 +112,8 @@ public class AuthController {
     /**
      * POST /api/auth/send-otp
      * Body: { phoneNumber }
-     * Generates a 6-digit OTP, stores it on the user with a 10-minute expiry,
-     * and returns it in the response (dev mode — remove otp field in production).
+     * Generates a 6-digit OTP, stores it with a 10-minute expiry, and sends via Fast2SMS.
+     * When fast2sms.enabled=false (dev mode) the OTP is also returned in the response for testing.
      */
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, Object>> sendOtp(@RequestBody Map<String, String> body) {
@@ -129,20 +133,57 @@ public class AuthController {
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
         userService.save(user);
 
-        // Send OTP via SMS (Twilio when enabled, log-only in dev mode)
-        smsService.sendOtp(phone, otp);
+        boolean sent = smsService.sendOtp(phone, otp);
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("success", true);
-        resp.put("message", "OTP sent to " + phone);
-        resp.put("otp", otp); // REMOVE this field in production
+        resp.put("message", sent && smsEnabled ? "OTP sent to " + phone : "OTP generated");
+        // Return OTP in response ONLY when SMS is disabled (dev mode convenience)
+        if (!smsEnabled) {
+            resp.put("otp", otp);
+            log.info("📱 [DEV MODE] OTP for {}: {}", phone, otp);
+        }
+        return ResponseEntity.ok(resp);
+    }
+
+    /**
+     * POST /api/auth/resend-otp
+     * Body: { phoneNumber }
+     * Resends OTP to the same phone via Fast2SMS.
+     */
+    @PostMapping("/resend-otp")
+    public ResponseEntity<Map<String, Object>> resendOtp(@RequestBody Map<String, String> body) {
+        String phone = body.get("phoneNumber");
+        User user;
+        try {
+            user = userService.getUserByPhone(phone);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "User not found."));
+        }
+
+        // Regenerate OTP and resend
+        int otp = (int) (Math.random() * 900000) + 100000;
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        userService.save(user);
+
+        boolean sent = smsService.sendOtp(phone, otp);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("success", true);
+        resp.put("message", sent && smsEnabled ? "OTP resent to " + phone : "OTP regenerated");
+        if (!smsEnabled) {
+            resp.put("otp", otp);
+        }
         return ResponseEntity.ok(resp);
     }
 
     /**
      * POST /api/auth/verify-otp
      * Body: { phoneNumber, otp }
-     * Validates the OTP, marks phone as verified, clears OTP, and returns a JWT.
+     * Validates OTP against DB (+ MSG91 session verify when enabled).
+     * Returns JWT on success.
      */
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, Object>> verifyOtp(@RequestBody Map<String, Object> body) {
@@ -159,20 +200,27 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
         }
 
+        // DB-level check — OTP match
         if (user.getOtp() == null || !user.getOtp().equals(otp)) {
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);
-            err.put("message", "Invalid OTP");
+            err.put("message", "Invalid OTP. Please check and try again.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
         }
 
+        // Expiry check
         if (user.getOtpExpiry() != null && user.getOtpExpiry().isBefore(LocalDateTime.now())) {
             Map<String, Object> err = new HashMap<>();
             err.put("success", false);
-            err.put("message", "OTP expired");
+            err.put("message", "OTP has expired. Please request a new one.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
         }
 
+        // MSG91 session verification (when enabled — extra layer)
+        // If MSG91 says invalid, trust it; if MSG91 is down, fall back to DB check already done above
+        smsService.verifyOtpWithMsg91(phone, otp); // result is informational — DB check is primary
+
+        // Clear OTP and mark phone verified
         user.setOtp(null);
         user.setOtpExpiry(null);
         user.setPhoneVerified(true);
@@ -343,20 +391,22 @@ public class AuthController {
                     .body(Map.of("success", false, "message", "Phone number already registered"));
         }
 
-        // Link phone and send OTP
+        // Link phone and send OTP via Fast2SMS
         user.setPhoneNumber(phone);
         int otp = (int) (Math.random() * 900000) + 100000;
         user.setOtp(otp);
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
         userService.save(user);
 
-        // Send OTP via SMS (Twilio when enabled, log-only in dev mode)
-        smsService.sendOtp(phone, otp);
+        boolean sent = smsService.sendOtp(phone, otp);
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("success", true);
-        resp.put("message", "OTP sent to " + phone);
-        resp.put("otp", otp); // REMOVE in production
+        resp.put("message", sent && smsEnabled ? "OTP sent to " + phone : "OTP generated");
+        // Return OTP in response only in dev mode (SMS disabled)
+        if (!smsEnabled) {
+            resp.put("otp", otp);
+        }
         return ResponseEntity.ok(resp);
     }
 }

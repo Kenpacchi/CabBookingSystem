@@ -1,0 +1,295 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A"/>
+      <stop offset="40%" style="stop-color:#1E293B"/>
+      <stop offset="100%" style="stop-color:#1A1A2E"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E293B"/>
+      <stop offset="100%" style="stop-color:#0F172A"/>
+    </linearGradient>
+    <linearGradient id="cabBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FBBF24"/>
+      <stop offset="100%" style="stop-color:#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="cabRoof" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FCD34D"/>
+      <stop offset="100%" style="stop-color:#FBBF24"/>
+    </linearGradient>
+    <linearGradient id="buildingL" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1E3A5F"/>
+      <stop offset="100%" style="stop-color:#1A2E4A"/>
+    </linearGradient>
+    <linearGradient id="buildingR" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1A2E4A"/>
+      <stop offset="100%" style="stop-color:#162440"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="headlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FEF3C7;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="streetglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FCD34D;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="1440" height="900" fill="url(#sky)"/>
+
+  <!-- Stars -->
+  <circle cx="120" cy="60" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="240" cy="30" r="1" fill="white" opacity="0.6"/>
+  <circle cx="380" cy="80" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="500" cy="20" r="1" fill="white" opacity="0.5"/>
+  <circle cx="620" cy="55" r="2" fill="white" opacity="0.8"/>
+  <circle cx="780" cy="35" r="1" fill="white" opacity="0.6"/>
+  <circle cx="900" cy="70" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="1050" cy="25" r="1" fill="white" opacity="0.5"/>
+  <circle cx="1180" cy="50" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="1320" cy="40" r="1" fill="white" opacity="0.6"/>
+  <circle cx="60" cy="110" r="1" fill="white" opacity="0.4"/>
+  <circle cx="450" cy="100" r="1" fill="white" opacity="0.5"/>
+  <circle cx="830" cy="15" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="1100" cy="90" r="1" fill="white" opacity="0.4"/>
+  <circle cx="1400" cy="20" r="1.5" fill="white" opacity="0.6"/>
+
+  <!-- Moon -->
+  <circle cx="1300" cy="100" r="45" fill="#FEF3C7" opacity="0.15"/>
+  <circle cx="1300" cy="100" r="35" fill="#FEF9C3" opacity="0.2"/>
+  <circle cx="1300" cy="100" r="25" fill="#FFFDE7" opacity="0.3"/>
+
+  <!-- Far background buildings (silhouette) -->
+  <rect x="0"    y="300" width="80"  height="300" fill="#111827" opacity="0.9"/>
+  <rect x="60"   y="260" width="60"  height="340" fill="#111827" opacity="0.9"/>
+  <rect x="100"  y="320" width="50"  height="280" fill="#111827" opacity="0.9"/>
+  <rect x="200"  y="240" width="90"  height="360" fill="#111827" opacity="0.85"/>
+  <rect x="270"  y="280" width="50"  height="320" fill="#111827" opacity="0.85"/>
+  <rect x="1100" y="260" width="90"  height="340" fill="#111827" opacity="0.85"/>
+  <rect x="1170" y="230" width="70"  height="370" fill="#111827" opacity="0.9"/>
+  <rect x="1260" y="280" width="80"  height="320" fill="#111827" opacity="0.85"/>
+  <rect x="1340" y="250" width="100" height="350" fill="#111827" opacity="0.9"/>
+
+  <!-- Left tall building -->
+  <rect x="30" y="180" width="140" height="420" fill="url(#buildingL)" rx="4"/>
+  <!-- windows left building -->
+  <rect x="45"  y="195" width="20" height="14" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="75"  y="195" width="20" height="14" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="105" y="195" width="20" height="14" fill="#F59E0B" opacity="0.4" rx="2"/>
+  <rect x="135" y="195" width="20" height="14" fill="#FCD34D" opacity="0.7" rx="2"/>
+  <rect x="45"  y="225" width="20" height="14" fill="#FCD34D" opacity="0.5" rx="2"/>
+  <rect x="75"  y="225" width="20" height="14" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="105" y="225" width="20" height="14" fill="#FCD34D" opacity="0.3" rx="2"/>
+  <rect x="135" y="225" width="20" height="14" fill="#F59E0B" opacity="0.6" rx="2"/>
+  <rect x="45"  y="255" width="20" height="14" fill="#F59E0B" opacity="0.7" rx="2"/>
+  <rect x="75"  y="255" width="20" height="14" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="105" y="255" width="20" height="14" fill="#F59E0B" opacity="0.9" rx="2"/>
+  <rect x="45"  y="285" width="20" height="14" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="75"  y="285" width="20" height="14" fill="#F59E0B" opacity="0.3" rx="2"/>
+  <rect x="135" y="285" width="20" height="14" fill="#FCD34D" opacity="0.8" rx="2"/>
+  <rect x="45"  y="315" width="20" height="14" fill="#F59E0B" opacity="0.5" rx="2"/>
+  <rect x="105" y="315" width="20" height="14" fill="#FCD34D" opacity="0.7" rx="2"/>
+  <rect x="135" y="315" width="20" height="14" fill="#F59E0B" opacity="0.4" rx="2"/>
+
+  <!-- Left mid building -->
+  <rect x="200" y="220" width="120" height="380" fill="url(#buildingL)" rx="4" opacity="0.9"/>
+  <rect x="215" y="235" width="18" height="12" fill="#F59E0B" opacity="0.7" rx="2"/>
+  <rect x="243" y="235" width="18" height="12" fill="#FCD34D" opacity="0.5" rx="2"/>
+  <rect x="271" y="235" width="18" height="12" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="299" y="235" width="18" height="12" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="215" y="263" width="18" height="12" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="243" y="263" width="18" height="12" fill="#F59E0B" opacity="0.9" rx="2"/>
+  <rect x="271" y="263" width="18" height="12" fill="#FCD34D" opacity="0.3" rx="2"/>
+  <rect x="215" y="291" width="18" height="12" fill="#F59E0B" opacity="0.5" rx="2"/>
+  <rect x="271" y="291" width="18" height="12" fill="#F59E0B" opacity="0.7" rx="2"/>
+  <rect x="299" y="291" width="18" height="12" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="215" y="319" width="18" height="12" fill="#FCD34D" opacity="0.8" rx="2"/>
+  <rect x="243" y="319" width="18" height="12" fill="#F59E0B" opacity="0.4" rx="2"/>
+  <rect x="299" y="319" width="18" height="12" fill="#FCD34D" opacity="0.9" rx="2"/>
+
+  <!-- Right tall building -->
+  <rect x="1270" y="160" width="150" height="440" fill="url(#buildingR)" rx="4"/>
+  <rect x="1285" y="175" width="20" height="14" fill="#F59E0B" opacity="0.7" rx="2"/>
+  <rect x="1315" y="175" width="20" height="14" fill="#FCD34D" opacity="0.5" rx="2"/>
+  <rect x="1345" y="175" width="20" height="14" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="1375" y="175" width="20" height="14" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="1285" y="205" width="20" height="14" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="1315" y="205" width="20" height="14" fill="#F59E0B" opacity="0.9" rx="2"/>
+  <rect x="1375" y="205" width="20" height="14" fill="#F59E0B" opacity="0.5" rx="2"/>
+  <rect x="1285" y="235" width="20" height="14" fill="#F59E0B" opacity="0.6" rx="2"/>
+  <rect x="1345" y="235" width="20" height="14" fill="#FCD34D" opacity="0.8" rx="2"/>
+  <rect x="1375" y="235" width="20" height="14" fill="#F59E0B" opacity="0.3" rx="2"/>
+  <rect x="1285" y="265" width="20" height="14" fill="#FCD34D" opacity="0.7" rx="2"/>
+  <rect x="1315" y="265" width="20" height="14" fill="#F59E0B" opacity="0.4" rx="2"/>
+  <rect x="1345" y="265" width="20" height="14" fill="#FCD34D" opacity="0.9" rx="2"/>
+  <rect x="1375" y="265" width="20" height="14" fill="#F59E0B" opacity="0.5" rx="2"/>
+  <rect x="1285" y="295" width="20" height="14" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="1315" y="295" width="20" height="14" fill="#FCD34D" opacity="0.3" rx="2"/>
+  <rect x="1375" y="295" width="20" height="14" fill="#FCD34D" opacity="0.6" rx="2"/>
+
+  <!-- Right mid building -->
+  <rect x="1120" y="200" width="130" height="400" fill="url(#buildingR)" rx="4" opacity="0.9"/>
+  <rect x="1135" y="215" width="18" height="12" fill="#F59E0B" opacity="0.6" rx="2"/>
+  <rect x="1163" y="215" width="18" height="12" fill="#FCD34D" opacity="0.8" rx="2"/>
+  <rect x="1191" y="215" width="18" height="12" fill="#F59E0B" opacity="0.4" rx="2"/>
+  <rect x="1219" y="215" width="18" height="12" fill="#FCD34D" opacity="0.7" rx="2"/>
+  <rect x="1135" y="243" width="18" height="12" fill="#FCD34D" opacity="0.5" rx="2"/>
+  <rect x="1191" y="243" width="18" height="12" fill="#FCD34D" opacity="0.9" rx="2"/>
+  <rect x="1219" y="243" width="18" height="12" fill="#F59E0B" opacity="0.3" rx="2"/>
+  <rect x="1135" y="271" width="18" height="12" fill="#F59E0B" opacity="0.7" rx="2"/>
+  <rect x="1163" y="271" width="18" height="12" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="1219" y="271" width="18" height="12" fill="#F59E0B" opacity="0.8" rx="2"/>
+  <rect x="1135" y="299" width="18" height="12" fill="#FCD34D" opacity="0.6" rx="2"/>
+  <rect x="1163" y="299" width="18" height="12" fill="#F59E0B" opacity="0.9" rx="2"/>
+  <rect x="1191" y="299" width="18" height="12" fill="#FCD34D" opacity="0.3" rx="2"/>
+
+  <!-- Road -->
+  <rect x="0" y="580" width="1440" height="320" fill="url(#road)"/>
+  <!-- Road surface detail -->
+  <rect x="0" y="580" width="1440" height="4" fill="#334155" opacity="0.8"/>
+
+  <!-- Road lane markings -->
+  <rect x="100" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="260" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="420" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="580" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="740" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="900" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="1060" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="1220" y="640" width="80" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+  <rect x="1380" y="640" width="60" height="8" fill="#FCD34D" opacity="0.4" rx="2"/>
+
+  <!-- Centre line -->
+  <rect x="0"    y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="170"  y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="340"  y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="510"  y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="680"  y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="850"  y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="1020" y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="1190" y="728" width="100" height="6" fill="white" opacity="0.3" rx="2"/>
+  <rect x="1360" y="728" width="80"  height="6" fill="white" opacity="0.3" rx="2"/>
+
+  <!-- Street lamp posts -->
+  <line x1="360" y1="480" x2="360" y2="590" stroke="#475569" stroke-width="4"/>
+  <line x1="360" y1="482" x2="400" y2="480" stroke="#475569" stroke-width="3"/>
+  <circle cx="400" cy="478" r="8" fill="#FCD34D" opacity="0.9" filter="url(#glow)"/>
+  <ellipse cx="400" cy="510" rx="60" ry="20" fill="url(#streetglow)"/>
+
+  <line x1="720" y1="480" x2="720" y2="590" stroke="#475569" stroke-width="4"/>
+  <line x1="720" y1="482" x2="760" y2="480" stroke="#475569" stroke-width="3"/>
+  <circle cx="760" cy="478" r="8" fill="#FCD34D" opacity="0.9" filter="url(#glow)"/>
+  <ellipse cx="760" cy="510" rx="60" ry="20" fill="url(#streetglow)"/>
+
+  <line x1="1080" y1="480" x2="1080" y2="590" stroke="#475569" stroke-width="4"/>
+  <line x1="1080" y1="482" x2="1120" y2="480" stroke="#475569" stroke-width="3"/>
+  <circle cx="1120" cy="478" r="8" fill="#FCD34D" opacity="0.9" filter="url(#glow)"/>
+  <ellipse cx="1120" cy="510" rx="60" ry="20" fill="url(#streetglow)"/>
+
+  <!-- === MAIN CAB === -->
+  <!-- Shadow -->
+  <ellipse cx="720" cy="598" rx="180" ry="14" fill="#000000" opacity="0.35"/>
+
+  <!-- Headlight beam -->
+  <polygon points="980,560 1200,520 1200,600 980,580" fill="url(#headlight)" opacity="0.25"/>
+
+  <!-- Cab body -->
+  <rect x="480" y="510" width="500" height="90" fill="url(#cabBody)" rx="12"/>
+
+  <!-- Cab roof -->
+  <path d="M540 510 Q560 460 620 455 L860 455 Q910 458 920 510 Z" fill="url(#cabRoof)"/>
+
+  <!-- Windshield (front) -->
+  <path d="M860 460 Q905 463 915 508 L870 508 Z" fill="#BFDBFE" opacity="0.7" rx="4"/>
+
+  <!-- Rear windshield -->
+  <path d="M550 460 Q545 464 537 508 L582 508 Z" fill="#BFDBFE" opacity="0.6" rx="4"/>
+
+  <!-- Side windows -->
+  <rect x="610" y="462" width="100" height="44" fill="#BFDBFE" opacity="0.65" rx="5"/>
+  <rect x="725" y="462" width="120" height="44" fill="#BFDBFE" opacity="0.65" rx="5"/>
+
+  <!-- Window frames -->
+  <rect x="608" y="460" width="104" height="48" fill="none" stroke="#D97706" stroke-width="2.5" rx="5"/>
+  <rect x="723" y="460" width="124" height="48" fill="none" stroke="#D97706" stroke-width="2.5" rx="5"/>
+
+  <!-- Door lines -->
+  <line x1="720" y1="510" x2="720" y2="600" stroke="#D97706" stroke-width="2" opacity="0.6"/>
+  <line x1="855" y1="510" x2="855" y2="600" stroke="#D97706" stroke-width="2" opacity="0.5"/>
+  <line x1="600" y1="510" x2="600" y2="600" stroke="#D97706" stroke-width="2" opacity="0.5"/>
+
+  <!-- Door handles -->
+  <rect x="790" y="555" width="28" height="8" fill="#D97706" rx="4" opacity="0.9"/>
+  <rect x="655" y="555" width="28" height="8" fill="#D97706" rx="4" opacity="0.9"/>
+
+  <!-- Taxi roof light -->
+  <rect x="700" y="443" width="60" height="16" fill="#FEF9C3" rx="5" filter="url(#glow)"/>
+  <text x="730" y="455" text-anchor="middle" font-size="9" font-weight="bold" fill="#D97706" font-family="Arial">TAXI</text>
+
+  <!-- Front bumper / grille -->
+  <rect x="960" y="550" width="22" height="45" fill="#D97706" rx="4" opacity="0.9"/>
+  <rect x="965" y="555" width="5" height="35" fill="#92400E" opacity="0.5" rx="1"/>
+  <rect x="973" y="555" width="5" height="35" fill="#92400E" opacity="0.5" rx="1"/>
+
+  <!-- Rear bumper -->
+  <rect x="478" y="550" width="22" height="45" fill="#D97706" rx="4" opacity="0.9"/>
+
+  <!-- Headlights -->
+  <rect x="958" y="518" width="26" height="18" fill="#FEF3C7" rx="4" filter="url(#softglow)" opacity="0.95"/>
+  <rect x="958" y="560" width="26" height="12" fill="#EF4444" rx="3" opacity="0.8"/>
+
+  <!-- Tail lights -->
+  <rect x="476" y="518" width="26" height="18" fill="#FCA5A5" rx="4" opacity="0.8"/>
+  <rect x="476" y="540" width="26" height="12" fill="#EF4444" rx="3" opacity="0.9"/>
+
+  <!-- Wheels -->
+  <circle cx="580" cy="600" r="42" fill="#1E293B"/>
+  <circle cx="580" cy="600" r="34" fill="#0F172A"/>
+  <circle cx="580" cy="600" r="22" fill="#334155"/>
+  <circle cx="580" cy="600" r="10" fill="#64748B"/>
+  <!-- Tyre spokes -->
+  <line x1="580" y1="578" x2="580" y2="622" stroke="#94A3B8" stroke-width="3" opacity="0.8"/>
+  <line x1="558" y1="600" x2="602" y2="600" stroke="#94A3B8" stroke-width="3" opacity="0.8"/>
+  <line x1="564" y1="584" x2="596" y2="616" stroke="#94A3B8" stroke-width="2" opacity="0.6"/>
+  <line x1="596" y1="584" x2="564" y2="616" stroke="#94A3B8" stroke-width="2" opacity="0.6"/>
+
+  <circle cx="880" cy="600" r="42" fill="#1E293B"/>
+  <circle cx="880" cy="600" r="34" fill="#0F172A"/>
+  <circle cx="880" cy="600" r="22" fill="#334155"/>
+  <circle cx="880" cy="600" r="10" fill="#64748B"/>
+  <line x1="880" y1="578" x2="880" y2="622" stroke="#94A3B8" stroke-width="3" opacity="0.8"/>
+  <line x1="858" y1="600" x2="902" y2="600" stroke="#94A3B8" stroke-width="3" opacity="0.8"/>
+  <line x1="864" y1="584" x2="896" y2="616" stroke="#94A3B8" stroke-width="2" opacity="0.6"/>
+  <line x1="896" y1="584" x2="864" y2="616" stroke="#94A3B8" stroke-width="2" opacity="0.6"/>
+
+  <!-- Background small car (left) -->
+  <rect x="80" y="545" width="220" height="45" fill="#334155" rx="8" opacity="0.7"/>
+  <path d="M110 545 Q120 520 145 518 L280 518 Q300 520 295 545 Z" fill="#475569" opacity="0.7"/>
+  <circle cx="130" cy="590" r="22" fill="#1E293B" opacity="0.8"/>
+  <circle cx="250" cy="590" r="22" fill="#1E293B" opacity="0.8"/>
+  <rect x="296" y="547" width="12" height="20" fill="#FEF3C7" rx="2" opacity="0.8" filter="url(#glow)"/>
+
+  <!-- Background small car (right) -->
+  <rect x="1150" y="545" width="220" height="45" fill="#334155" rx="8" opacity="0.6"/>
+  <path d="M1175 545 Q1185 520 1210 518 L1345 518 Q1365 520 1360 545 Z" fill="#475569" opacity="0.6"/>
+  <circle cx="1200" cy="590" r="22" fill="#1E293B" opacity="0.7"/>
+  <circle cx="1320" cy="590" r="22" fill="#1E293B" opacity="0.7"/>
+  <rect x="1147" y="547" width="12" height="20" fill="#FCA5A5" rx="2" opacity="0.7"/>
+
+  <!-- Overlay gradient for card area (right side) -->
+  <linearGradient id="cardOverlay" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" style="stop-color:#0F172A;stop-opacity:0"/>
+    <stop offset="60%" style="stop-color:#0F172A;stop-opacity:0.3"/>
+    <stop offset="100%" style="stop-color:#0F172A;stop-opacity:0.7"/>
+  </linearGradient>
+  <rect x="0" y="0" width="1440" height="900" fill="url(#cardOverlay)"/>
+</svg>

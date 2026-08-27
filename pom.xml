@@ -124,12 +124,7 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<!-- Twilio SMS (OTP delivery) -->
-		<dependency>
-			<groupId>com.twilio.sdk</groupId>
-			<artifactId>twilio</artifactId>
-			<version>10.6.1</version>
-		</dependency>
+		<!-- MSG91 uses plain HTTP via Spring's RestTemplate — no extra dependency needed -->
 
 		<!-- Testing -->
 		<dependency>

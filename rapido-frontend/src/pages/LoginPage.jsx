@@ -25,6 +25,25 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '958477394526-
 export default function LoginPage() {
   const navigate = useNavigate()
 
+  // Inject responsive background CSS (mobile uses portrait SVG)
+  useEffect(() => {
+    const id = 'cabkaro-login-bg-style'
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style')
+      style.id = id
+      style.textContent = `
+        @media (max-width: 640px) {
+          .cabkaro-auth-wrap {
+            background-image: url(/login-bg-mobile.svg) !important;
+            background-position: top center !important;
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
+    return () => { /* keep style for signup too */ }
+  }, [])
+
   // Login mode: 'password' | 'otp'
   const [mode, setMode]           = useState('password')
 
@@ -181,7 +200,7 @@ export default function LoginPage() {
   // ══════════════════════════════════════════════════════════════════════════
   if (googleUser) {
     return (
-      <div style={S.wrap}>
+      <div style={S.wrap} className="cabkaro-auth-wrap">
         <div style={S.card}>
           <div style={S.logoRow}>
             <img
@@ -189,7 +208,9 @@ export default function LoginPage() {
               alt="CABkaro"
               style={{ width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover' }}
             />
-            <span style={S.appName}>CABkaro</span>
+            <span style={S.appName}>
+              <span style={{ color: '#D97706' }}>CAB</span><span style={{ color: '#1A202C' }}>karo</span>
+            </span>
           </div>
 
           <div style={S.googleUserBanner}>
@@ -234,7 +255,7 @@ export default function LoginPage() {
   // MAIN LOGIN SCREEN
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div style={S.wrap}>
+    <div style={S.wrap} className="cabkaro-auth-wrap">
       <div style={S.card}>
 
         {/* Brand */}
@@ -244,7 +265,9 @@ export default function LoginPage() {
             alt="CABkaro"
             style={{ width: '64px', height: '64px', borderRadius: '16px', objectFit: 'cover', marginBottom: '14px' }}
           />
-          <span style={S.appName}>CABkaro</span>
+          <span style={S.appName}>
+            <span style={{ color: '#D97706' }}>CAB</span><span style={{ color: '#1A202C' }}>karo</span>
+          </span>
           <span style={S.tagline}>Your ride, your way</span>
         </div>
 
@@ -378,21 +401,28 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(160deg, #FFFBEB 0%, #F5F7FA 100%)',
+    backgroundImage: 'url(/login-bg-desktop.svg)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
     padding: '24px 16px',
+    position: 'relative',
   },
   card: {
     width: '100%',
     maxWidth: 420,
-    background: '#FFFFFF',
-    border: '1px solid #E2E8F0',
+    background: 'rgba(255,255,255,0.97)',
+    border: '1px solid rgba(226,232,240,0.8)',
     borderRadius: 24,
     padding: '40px 32px 36px',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+    backdropFilter: 'blur(8px)',
+    position: 'relative',
+    zIndex: 1,
   },
   logoSection: { textAlign: 'center', marginBottom: 32 },
   logoRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 24 },
-  appName: { display: 'block', fontSize: 32, fontWeight: 900, color: '#D97706', letterSpacing: '-0.5px' },
+  appName: { display: 'block', fontSize: 32, fontWeight: 900, letterSpacing: '-0.5px' },
   tagline: { display: 'block', fontSize: 13, color: '#718096', marginTop: 6 },
   title: { fontSize: 20, fontWeight: 700, color: '#1A202C', marginBottom: 20, marginTop: 0 },
 

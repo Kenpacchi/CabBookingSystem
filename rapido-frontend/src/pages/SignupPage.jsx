@@ -32,23 +32,31 @@ const S = {
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    background: 'linear-gradient(160deg, #FFFBEB 0%, #F5F7FA 100%)',
+    backgroundImage: 'url(/login-bg-desktop.svg)',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
     padding: '28px 16px 40px',
     fontFamily: 'var(--font)',
+    position: 'relative',
   },
   card: {
     width: '100%',
     maxWidth: '460px',
-    background: '#FFFFFF',
-    border: '1px solid #E2E8F0',
+    background: 'rgba(255,255,255,0.97)',
+    border: '1px solid rgba(226,232,240,0.8)',
     borderRadius: '24px',
     padding: '36px 32px 32px',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.08)',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+    backdropFilter: 'blur(8px)',
     animation: 'slideUp 0.35s var(--ease) both',
+    position: 'relative',
+    zIndex: 1,
   },
   logoSection: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' },
   appName: {
-    display: 'block', fontSize: '24px', fontWeight: '900', color: '#D97706',
+    display: 'block', fontSize: '24px', fontWeight: '900',
     letterSpacing: '-0.3px', lineHeight: 1.1,
   },
   tagline: { display: 'block', fontSize: '12px', color: '#718096', marginTop: '3px', letterSpacing: '0.4px' },
@@ -196,7 +204,9 @@ function BrandHeader() {
         style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', flexShrink: 0 }}
       />
       <div>
-        <span style={S.appName}>CABkaro</span>
+        <span style={S.appName}>
+          <span style={{ color: '#D97706' }}>CAB</span><span style={{ color: '#1A202C' }}>karo</span>
+        </span>
         <span style={S.tagline}>Your ride, your way</span>
       </div>
     </div>
@@ -249,6 +259,25 @@ export default function SignupPage() {
     const t = setTimeout(() => setOtpTimer(s => s - 1), 1000)
     return () => clearTimeout(t)
   }, [otpTimer])
+
+  // ── Mobile background CSS (portrait SVG on small screens) ─────────────────
+  useEffect(() => {
+    const id = 'cabkaro-login-bg-style'
+    if (!document.getElementById(id)) {
+      const style = document.createElement('style')
+      style.id = id
+      style.textContent = `
+        @media (max-width: 640px) {
+          .cabkaro-auth-wrap {
+            background-image: url(/login-bg-mobile.svg) !important;
+            background-position: top center !important;
+            background-attachment: scroll !important;
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
+  }, [])
 
   // ── Google SDK init ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -454,7 +483,7 @@ export default function SignupPage() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (screen === 'otp') {
     return (
-      <div style={S.wrapper}>
+      <div style={S.wrapper} className="cabkaro-auth-wrap">
         <div style={S.card}>
           <BrandHeader />
           <h2 style={S.title}>Verify your phone 📲</h2>
@@ -526,7 +555,7 @@ export default function SignupPage() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (screen === 'google-phone') {
     return (
-      <div style={S.wrapper}>
+      <div style={S.wrapper} className="cabkaro-auth-wrap">
         <div style={S.card}>
           <BrandHeader />
 
@@ -582,7 +611,7 @@ export default function SignupPage() {
   // SCREEN: Main signup form
   // ═══════════════════════════════════════════════════════════════════════════
   return (
-    <div style={S.wrapper}>
+    <div style={S.wrapper} className="cabkaro-auth-wrap">
       <div style={S.card}>
 
         <BrandHeader />
