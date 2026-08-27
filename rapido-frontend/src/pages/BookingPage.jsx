@@ -3,7 +3,7 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { rideApi, getUser } from '../services/api.js'
+import api, { rideApi, getUser } from '../services/api.js'
 import RateDriverModal from '../components/RateDriverModal.jsx'
 import PaymentModal from '../components/PaymentModal.jsx'
 import DriverChatModal from '../components/DriverChatModal.jsx'
@@ -12,7 +12,19 @@ import {
   IconBike, IconAuto, IconCab,
   IconMap, IconGPS, IconArrowLeft,
   IconLocationPin, IconPhone, IconSurge, IconClock,
+  IconHome, IconWork, IconGym, IconSchool, IconHospital, IconMarket, IconLocation,
 } from '../components/icons.jsx'
+
+// ── Quick location label config (mirrors ProfilePage) ─────────────────────────
+const LABEL_CONFIG = {
+  HOME:     { Icon: IconHome,     color: '#2563EB', bg: '#DBEAFE', label: 'Home' },
+  WORK:     { Icon: IconWork,     color: '#059669', bg: '#D1FAE5', label: 'Work' },
+  GYM:      { Icon: IconGym,      color: '#7C3AED', bg: '#EDE9FE', label: 'Gym' },
+  SCHOOL:   { Icon: IconSchool,   color: '#EA580C', bg: '#FFEDD5', label: 'School' },
+  HOSPITAL: { Icon: IconHospital, color: '#DC2626', bg: '#FEE2E2', label: 'Hospital' },
+  MARKET:   { Icon: IconMarket,   color: '#F59E0B', bg: '#FEF3C7', label: 'Market' },
+  OTHER:    { Icon: IconLocation, color: '#6B7280', bg: '#F3F4F6', label: 'Other' },
+}
 
 // ── Fix Leaflet default icon ───────────────────────────────────────────────────
 delete L.Icon.Default.prototype._getIconUrl
@@ -195,6 +207,276 @@ function clearRideFromStorage() {
   try { localStorage.removeItem(RIDE_STORAGE_KEY) } catch {}
 }
 
+// ── Map click handler (reusable) ──────────────────────────────────────────────
+function MapClickHandler2({ onMapClick }) {
+  useMapEvents({ click(e) { onMapClick(e.latlng.lat, e.latlng.lng) } })
+  return null
+}
+
+// ── Colored pin icon ──────────────────────────────────────────────────────────
+const makePinIcon2 = (color) => new L.DivIcon({
+  html: `<div style="width:22px;height:22px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
+  iconSize: [22,22], iconAnchor: [11,11], className: '',
+})
+
+// ── Location Picker Modal (same UX as ProfilePage quick-location modal) ────────
+function LocationPickerModal({ forField, onClose, onConfirm }) {
+  const isPickup = forField === 'pickup'
+  const color    = isPickup ? '#059669' : '#DC2626'
+  const label    = isPickup ? 'Pickup' : 'Drop-off'
+
+  const [pinLat,    setPinLat]    = useState(null)
+  const [pinLng,    setPinLng]    = useState(null)
+  const [address,   setAddress]   = useState('')
+  const [locating,  setLocating]  = useState(false)
+  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629])
+  const [searchQ,   setSearchQ]   = useState('')
+  const [results,   setResults]   = useState([])
+  const [searching, setSearching] = useState(false)
+  const searchTimer = useRef(null)
+
+  // Auto-GPS on open for pickup
+  useEffect(() => {
+    if (isPickup && navigator.geolocation) {
+      setLocating(true)
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude: lat, longitude: lng } = pos.coords
+        setPinLat(lat); setPinLng(lng)
+        setMapCenter([lat, lng])
+        setAddress('Loading address…')
+        const addr = await reverseGeocode(lat, lng)
+        setAddress(addr)
+        setLocating(false)
+      }, () => setLocating(false))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleMapClick = useCallback(async (lat, lng) => {
+    setPinLat(lat); setPinLng(lng)
+    setAddress('Loading address…')
+    const addr = await reverseGeocode(lat, lng)
+    setAddress(addr)
+    setResults([])
+    setSearchQ('')
+  }, [])
+
+  const handleGPS = () => {
+    if (!navigator.geolocation) return
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const { latitude: lat, longitude: lng } = pos.coords
+      setPinLat(lat); setPinLng(lng)
+      setMapCenter([lat, lng])
+      setAddress('Loading address…')
+      const addr = await reverseGeocode(lat, lng)
+      setAddress(addr)
+      setLocating(false)
+    }, () => setLocating(false))
+  }
+
+  const handleSearchInput = (q) => {
+    setSearchQ(q)
+    clearTimeout(searchTimer.current)
+    if (q.length < 3) { setResults([]); return }
+    setSearching(true)
+    searchTimer.current = setTimeout(async () => {
+      const r = await forwardGeocode(q)
+      setResults(r)
+      setSearching(false)
+    }, 400)
+  }
+
+  const handleResultClick = async (r) => {
+    const lat = parseFloat(r.lat), lng = parseFloat(r.lon)
+    const addr = r.display_name.split(',').slice(0, 3).join(', ')
+    setPinLat(lat); setPinLng(lng)
+    setMapCenter([lat, lng])
+    setAddress(addr)
+    setSearchQ(addr)
+    setResults([])
+  }
+
+  const handleConfirm = () => {
+    if (!pinLat || !pinLng) return
+    onConfirm({ lat: pinLat, lng: pinLng, address: address || `${pinLat.toFixed(4)}, ${pinLng.toFixed(4)}` })
+    onClose()
+  }
+
+  return (
+    <div style={LM.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={LM.sheet}>
+        {/* Header */}
+        <div style={LM.header}>
+          <div style={LM.headerLeft}>
+            <div style={{ ...LM.dot, background: color }} />
+            <div>
+              <div style={LM.title}>Set {label} Location</div>
+              <div style={LM.sub}>Search or tap the map to pin</div>
+            </div>
+          </div>
+          <button style={LM.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        {/* Search bar */}
+        <div style={LM.searchWrap}>
+          <div style={LM.searchRow}>
+            <IconLocationPin size={15} color="#A0AEC0" />
+            <input
+              style={LM.searchInput}
+              placeholder={`Search ${label.toLowerCase()} address…`}
+              value={searchQ}
+              onChange={e => handleSearchInput(e.target.value)}
+              autoFocus
+            />
+            {searching && <span style={{fontSize:12,color:'#A0AEC0'}}>…</span>}
+          </div>
+          {results.length > 0 && (
+            <div style={LM.resultsList}>
+              {results.map((r, i) => (
+                <div key={i} style={LM.resultItem} onClick={() => handleResultClick(r)}>
+                  <IconLocationPin size={12} color="#A0AEC0" />
+                  <span>{r.display_name.substring(0, 65)}…</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* GPS button */}
+        <button style={LM.gpsBtn} onClick={handleGPS} disabled={locating}>
+          <IconGPS size={15} color="#2563EB" />
+          <span>{locating ? 'Getting location…' : 'Use my current location'}</span>
+        </button>
+
+        {/* Map */}
+        <div style={LM.mapWrap}>
+          <MapContainer
+            center={mapCenter}
+            zoom={pinLat ? 15 : 5}
+            style={{ height: '100%', width: '100%' }}
+            key={`${mapCenter[0]}-${mapCenter[1]}`}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; OpenStreetMap contributors'
+            />
+            <MapClickHandler2 onMapClick={handleMapClick} />
+            {pinLat && pinLng && (
+              <Marker position={[pinLat, pinLng]} icon={makePinIcon2(color)} />
+            )}
+          </MapContainer>
+          {!pinLat && (
+            <div style={LM.mapHint}>
+              <IconMap size={16} color="#A0AEC0" />
+              <span>Tap the map to drop a pin</span>
+            </div>
+          )}
+        </div>
+
+        {/* Address display */}
+        {pinLat && (
+          <div style={{ ...LM.addressBox, borderColor: color + '55', background: isPickup ? '#F0FFF4' : '#FFF5F5' }}>
+            <IconLocationPin size={14} color={color} />
+            <span style={{ ...LM.addressText, color: isPickup ? '#276749' : '#9B1C1C' }}>
+              {address || `${pinLat.toFixed(5)}, ${pinLng.toFixed(5)}`}
+            </span>
+          </div>
+        )}
+
+        {/* Confirm button */}
+        <button
+          style={{ ...LM.confirmBtn, background: color, opacity: !pinLat ? 0.5 : 1 }}
+          onClick={handleConfirm}
+          disabled={!pinLat}
+        >
+          Confirm {label}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Modal styles
+const LM = {
+  overlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+    zIndex: 3000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+  },
+  sheet: {
+    background: '#FFFFFF', borderRadius: '20px 20px 0 0',
+    width: '100%', maxWidth: 540,
+    maxHeight: '92vh', overflowY: 'auto',
+    padding: '0 0 24px',
+    boxShadow: '0 -4px 40px rgba(0,0,0,0.2)',
+  },
+  header: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '16px 18px 12px', borderBottom: '1px solid #F0F2F5',
+    position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 10,
+  },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+  dot: { width: 16, height: 16, borderRadius: '50%', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)', flexShrink: 0 },
+  title: { fontSize: 16, fontWeight: 700, color: '#1A202C' },
+  sub:   { fontSize: 12, color: '#A0AEC0', marginTop: 2 },
+  closeBtn: {
+    background: '#F5F7FA', border: 'none', borderRadius: 8,
+    width: 34, height: 34, cursor: 'pointer', fontSize: 16,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#718096',
+  },
+  searchWrap: { padding: '12px 18px 0', position: 'relative' },
+  searchRow: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    background: '#F5F7FA', border: '1px solid #E2E8F0',
+    borderRadius: 12, padding: '10px 14px',
+  },
+  searchInput: {
+    flex: 1, border: 'none', background: 'transparent',
+    fontSize: 14, color: '#1A202C', outline: 'none',
+  },
+  resultsList: {
+    position: 'absolute', top: '100%', left: 18, right: 18,
+    background: '#FFFFFF', border: '1px solid #E2E8F0',
+    borderRadius: 12, zIndex: 9999, maxHeight: 220, overflowY: 'auto',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4,
+  },
+  resultItem: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '10px 14px', fontSize: 13, color: '#1A202C',
+    cursor: 'pointer', borderBottom: '1px solid #F0F2F5',
+  },
+  gpsBtn: {
+    display: 'flex', alignItems: 'center', gap: 8,
+    margin: '12px 18px 0',
+    background: '#EFF6FF', border: '1px solid #BFDBFE',
+    color: '#2563EB', borderRadius: 10, padding: '10px 14px',
+    cursor: 'pointer', fontSize: 13, fontWeight: 600, width: 'calc(100% - 36px)',
+  },
+  mapWrap: {
+    position: 'relative', height: 270, margin: '12px 18px 0',
+    borderRadius: 14, overflow: 'hidden', border: '1px solid #E2E8F0',
+  },
+  mapHint: {
+    position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+    background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(4px)',
+    border: '1px solid #E2E8F0', borderRadius: 20,
+    padding: '8px 14px', fontSize: 12, color: '#718096',
+    display: 'flex', alignItems: 'center', gap: 6,
+    whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1000,
+  },
+  addressBox: {
+    display: 'flex', alignItems: 'flex-start', gap: 8,
+    margin: '12px 18px 0', border: '1px solid',
+    borderRadius: 10, padding: '10px 14px',
+  },
+  addressText: { fontSize: 13, lineHeight: 1.4, flex: 1, fontWeight: 500 },
+  confirmBtn: {
+    display: 'block', width: 'calc(100% - 36px)', margin: '14px 18px 0',
+    color: 'white', border: 'none', borderRadius: 14,
+    padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+  },
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BookingPage() {
   const navigate = useNavigate()
@@ -236,6 +518,11 @@ export default function BookingPage() {
   const [cancelSecondsLeft, setCancelSecondsLeft] = useState(0)   // counts 60→0 after booking
   const [cancelling, setCancelling]               = useState(false)
   const [etaMinutes, setEtaMinutes]               = useState(null) // ETA to destination in minutes
+  // ── Quick location shortcuts ──────────────────────────────────────────────
+  const [quickLocs, setQuickLocs]         = useState([])
+  const [showQuickLocs, setShowQuickLocs] = useState(true)
+  // ── Location picker modal ─────────────────────────────────────────────────
+  const [locationModal, setLocationModal] = useState(null) // null | 'pickup' | 'drop'
   const timerRef       = useRef(null)
   const clockRef       = useRef(null)
   const restoredRef    = useRef(false)
@@ -246,6 +533,13 @@ export default function BookingPage() {
   useEffect(() => {
     clockRef.current = setInterval(() => setCurrentTime(new Date()), 30000)
     return () => clearInterval(clockRef.current)
+  }, [])
+
+  // ── Fetch saved quick locations (Home / Work / etc.) ──────────────────────
+  useEffect(() => {
+    api.get('/user/quick-locations')
+      .then(res => setQuickLocs(res.data || []))
+      .catch(() => {}) // not logged in or no locations saved — silently ignore
   }, [])
 
   // ── Cancel countdown — starts when stage becomes 'riding' ────────────────
@@ -333,6 +627,7 @@ export default function BookingPage() {
       const addr = dropAddrParam ? decodeURIComponent(dropAddrParam) : `${lat.toFixed(4)}, ${lng.toFixed(4)}`
       setDrop({ lat, lng, address: addr })
       setDropQ(addr)
+      setShowQuickLocs(false) // drop already set from URL, hide chips
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -495,7 +790,18 @@ export default function BookingPage() {
   }, [])
   const handleMapDrop = useCallback(async ({ lat, lng }) => {
     const a = await reverseGeocode(lat, lng)
-    setDrop({ lat, lng, address: a }); setDropQ(a); setClickMode(false)
+    setDrop({ lat, lng, address: a }); setDropQ(a); setClickMode(false); setShowQuickLocs(false)
+  }, [])
+
+  // ── Select a saved quick location as the drop point ───────────────────────
+  const handleQuickLocSelect = useCallback((loc) => {
+    const lat = loc.latitude
+    const lng = loc.longitude
+    const addr = loc.address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    setDrop({ lat, lng, address: addr })
+    setDropQ(addr)
+    setDropR([])
+    setShowQuickLocs(false) // hide chips once a shortcut is chosen
   }, [])
 
   // ── Book ride ──────────────────────────────────────────────────────────────
@@ -615,7 +921,7 @@ export default function BookingPage() {
       <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#F5F7FA'}}>
         <div style={{flex:1,position:'relative'}}>
           <MapContainer center={pickup ? [pickup.lat, pickup.lng] : DEFAULT_CENTER} zoom={14} style={{width:'100%',height:'100%'}} zoomControl={false}>
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; OpenStreetMap &copy; CartoDB'/>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
             {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}><Popup>Pickup</Popup></Marker>}
             {drop    && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>Drop</Popup></Marker>}
             {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#F59E0B',weight:5,opacity:0.9}}/>}
@@ -786,10 +1092,11 @@ export default function BookingPage() {
 
   // ══ STAGE: MAP / SELECT (main) ════════════════════════════════════════════
   return (
+  <>
     <div style={{height:'100vh',display:'flex',flexDirection:'column',background:'#F5F7FA',overflow:'hidden'}}>
       <div style={{position:'relative',flex:1}}>
         <MapContainer center={mapCenter} zoom={14} style={{width:'100%',height:'100%'}} zoomControl={false}>
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; OpenStreetMap &copy; CartoDB'/>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
           <MapClickHandler active={clickMode} selectingFor={selectingFor} onPickup={handleMapPickup} onDrop={handleMapDrop}/>
           {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}><Popup>{pickup.address}</Popup></Marker>}
           {drop   && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>{drop.address}</Popup></Marker>}
@@ -842,22 +1149,14 @@ export default function BookingPage() {
         {/* Pickup */}
         <div style={SS.locRow}>
           <div style={{...SS.locDot, background:'#059669'}}/>
-          <div style={{flex:1, position:'relative'}}>
-            <input style={SS.locInput} placeholder="Pickup location" value={pickupQuery}
-              onChange={e => { setPickupQ(e.target.value); handleSearch(e.target.value, true) }}/>
-            {pickupResults.length > 0 && (
-              <div style={SS.suggestions}>
-                {pickupResults.map((r, i) => (
-                  <div key={i} style={SS.suggestion} onClick={() => selectResult(r, true)}>
-                    <IconLocationPin size={12} color="#A0AEC0" style={{marginRight:6,flexShrink:0}}/>
-                    {r.display_name.substring(0, 60)}…
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <button style={SS.iconBtn} title="Pin on map" onClick={() => { setSelecting('pickup'); setClickMode(true) }}>
-            <IconMap size={16} color="#718096"/>
+          <button
+            style={{...SS.locBtn, borderColor: pickup ? '#BBF7D0' : '#E2E8F0', background: pickup ? '#F0FFF4' : '#FAFAFA'}}
+            onClick={() => setLocationModal('pickup')}
+          >
+            <span style={{flex:1, textAlign:'left', color: pickup ? '#1A202C' : '#A0AEC0', fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+              {pickup ? pickup.address : 'Set pickup location'}
+            </span>
+            <IconMap size={15} color={pickup ? '#059669' : '#A0AEC0'} />
           </button>
           <button style={SS.gpsBtn} title="Detect GPS" onClick={() => navigator.geolocation?.getCurrentPosition(async p => {
             const { latitude: lat, longitude: lng } = p.coords
@@ -871,24 +1170,58 @@ export default function BookingPage() {
         {/* Drop */}
         <div style={SS.locRow}>
           <div style={{...SS.locDot, background:'#DC2626'}}/>
-          <div style={{flex:1, position:'relative'}}>
-            <input style={SS.locInput} placeholder="Where to?" value={dropQuery}
-              onChange={e => { setDropQ(e.target.value); handleSearch(e.target.value, false) }}/>
-            {dropResults.length > 0 && (
-              <div style={SS.suggestions}>
-                {dropResults.map((r, i) => (
-                  <div key={i} style={SS.suggestion} onClick={() => selectResult(r, false)}>
-                    <IconLocationPin size={12} color="#A0AEC0" style={{marginRight:6,flexShrink:0}}/>
-                    {r.display_name.substring(0, 60)}…
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <button style={SS.iconBtn} title="Pin on map" onClick={() => { setSelecting('drop'); setClickMode(true) }}>
-            <IconMap size={16} color="#718096"/>
+          <button
+            style={{...SS.locBtn, borderColor: drop ? '#FECACA' : '#E2E8F0', background: drop ? '#FFF5F5' : '#FAFAFA'}}
+            onClick={() => { setLocationModal('drop'); setShowQuickLocs(false) }}
+          >
+            <span style={{flex:1, textAlign:'left', color: drop ? '#1A202C' : '#A0AEC0', fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+              {drop ? drop.address : 'Where to?'}
+            </span>
+            <IconMap size={15} color={drop ? '#DC2626' : '#A0AEC0'} />
           </button>
+          {drop && (
+            <button style={{...SS.iconBtn, borderColor:'#FECACA', background:'#FFF5F5'}}
+              title="Clear drop" onClick={() => { setDrop(null); setDropQ(''); setShowQuickLocs(true) }}>
+              <span style={{fontSize:14, color:'#DC2626', lineHeight:1}}>✕</span>
+            </button>
+          )}
         </div>
+
+        {/* ── Quick location shortcut chips ── */}
+        {quickLocs.length > 0 && !showQuickLocs && drop && (
+          /* Drop is set — show a small "Change destination" link to re-expose chips */
+          <div style={SS.quickLocChangeRow}>
+            <span style={{fontSize:12,color:'#718096'}}>Quick locations:</span>
+            <button
+              style={SS.quickLocChangeBtn}
+              onClick={() => { setDrop(null); setDropQ(''); setShowQuickLocs(true) }}
+            >
+              ✕ Clear &amp; change
+            </button>
+          </div>
+        )}
+        {quickLocs.length > 0 && showQuickLocs && (
+          <div style={SS.quickLocRow}>
+            {quickLocs.map(loc => {
+              const cfg = LABEL_CONFIG[loc.label] || LABEL_CONFIG.OTHER
+              return (
+                <button
+                  key={loc.id || loc.label}
+                  style={{
+                    ...SS.quickLocChip,
+                    background: cfg.bg,
+                    borderColor: cfg.color + '55',
+                  }}
+                  onClick={() => handleQuickLocSelect(loc)}
+                  title={loc.address || cfg.label}
+                >
+                  <cfg.Icon size={13} color={cfg.color} />
+                  <span style={{color: cfg.color, fontWeight: 600, fontSize: 12}}>{cfg.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Vehicle selector — hidden when vehicle was pre-selected from home page */}
         {stage === 'select' && estimates && (
@@ -967,11 +1300,28 @@ export default function BookingPage() {
         )}
         {(!pickup || !drop) && (
           <p style={{color:'#A0AEC0',fontSize:13,textAlign:'center',padding:'8px 0 4px'}}>
-            {!pickup ? 'Set your pickup location' : 'Set destination to see fares'}
+            {!pickup ? 'Tap above to set your pickup location' : 'Tap above to set your destination'}
           </p>
         )}
       </div>
     </div>
+
+    {/* ── Location Picker Modal ── */}
+    {locationModal && (
+      <LocationPickerModal
+        forField={locationModal}
+        onClose={() => setLocationModal(null)}
+        onConfirm={(loc) => {
+          if (locationModal === 'pickup') {
+            setPickup(loc); setPickupQ(loc.address)
+          } else {
+            setDrop(loc); setDropQ(loc.address); setShowQuickLocs(false)
+          }
+          setLocationModal(null)
+        }}
+      />
+    )}
+  </>
   )
 }
 
@@ -1013,6 +1363,12 @@ const SS = {
   panelTitle: {display:'flex',alignItems:'center',gap:8,fontSize:16,fontWeight:700,color:'#1A202C',marginBottom:14},
   locRow: {display:'flex',alignItems:'center',gap:10,marginBottom:10},
   locDot: {width:12,height:12,borderRadius:'50%',flexShrink:0},
+  locBtn: {
+    flex:1, display:'flex', alignItems:'center', gap:8,
+    border:'1.5px solid', borderRadius:12,
+    padding:'10px 14px', cursor:'pointer',
+    minWidth:0, transition:'all 0.15s',
+  },
   locInput: {
     width:'100%',background:'#FFFFFF',border:'1px solid #E2E8F0',
     borderRadius:12,padding:'10px 14px',color:'#1A202C',fontSize:14,
@@ -1171,5 +1527,26 @@ const SS = {
     background:'#E5E7EB',border:'none',color:'#9CA3AF',
     borderRadius:10,padding:'9px 14px',fontSize:13,fontWeight:700,
     cursor:'not-allowed',whiteSpace:'nowrap',flexShrink:0,
+  },
+  // ── Quick location shortcut chips ──────────────────────────────────────────
+  quickLocRow: {
+    display:'flex',gap:8,flexWrap:'wrap',
+    padding:'0 0 10px',
+  },
+  quickLocChip: {
+    display:'flex',alignItems:'center',gap:5,
+    padding:'7px 12px',borderRadius:20,
+    border:'1.5px solid transparent',
+    cursor:'pointer',transition:'all 0.15s',
+    outline:'none',
+  },
+  quickLocChangeRow: {
+    display:'flex',alignItems:'center',justifyContent:'space-between',
+    padding:'2px 0 8px',
+  },
+  quickLocChangeBtn: {
+    background:'none',border:'none',color:'#F59E0B',
+    fontSize:12,fontWeight:600,cursor:'pointer',
+    padding:'2px 0',
   },
 }
