@@ -94,8 +94,10 @@ public class BookingService {
         double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return cabRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
+                .filter(d -> distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
+                        d.getLatitude(), d.getLongitude()) <= 1.0) // within 1 km of pickup
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(userLat, userLng,
+                        distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
@@ -128,7 +130,6 @@ public class BookingService {
                         user.setLongitude(drop.getLongitude());
                         userRepo.save(user);
 
-                        // Mark ride as completed
                         history.setStatus("COMPLETED");
                         history.setCompletedAt(LocalDateTime.now());
                         rideHistoryRepo.save(history);
@@ -136,7 +137,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge, history.getId());
+                            distanceKm, fare, surge, history.getId(), d.getLatitude(), d.getLongitude());
                 })
                 .orElseGet(() -> errorResponse("No cab available nearby."));
     }
@@ -147,8 +148,10 @@ public class BookingService {
         double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return bikeRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
+                .filter(d -> distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
+                        d.getLatitude(), d.getLongitude()) <= 1.0)
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(userLat, userLng,
+                        distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
@@ -188,7 +191,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge, history.getId());
+                            distanceKm, fare, surge, history.getId(), d.getLatitude(), d.getLongitude());
                 })
                 .orElseGet(() -> errorResponse("No bike available nearby."));
     }
@@ -199,8 +202,10 @@ public class BookingService {
         double userLng = user.getLongitude() != null ? user.getLongitude() : pickup.getLongitude();
         return autoRepo.findAll().stream()
                 .filter(d -> d.getIsAvailable() == FlagTypeEnum.Y && Boolean.TRUE.equals(d.getAccept()))
+                .filter(d -> distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
+                        d.getLatitude(), d.getLongitude()) <= 1.0)
                 .min(Comparator.comparingDouble(d ->
-                        distanceService.haversineDistance(userLat, userLng,
+                        distanceService.haversineDistance(pickup.getLatitude(), pickup.getLongitude(),
                                 d.getLatitude(), d.getLongitude())))
                 .map(d -> {
                     d.setUserOtp(user.getOtp());
@@ -240,7 +245,7 @@ public class BookingService {
 
                     return successResponse(d.getName(), d.getMobileNumber(),
                             d.getVehicle() != null ? d.getVehicle().getVehicleNumber() : "N/A",
-                            distanceKm, fare, surge, history.getId());
+                            distanceKm, fare, surge, history.getId(), d.getLatitude(), d.getLongitude());
                 })
                 .orElseGet(() -> errorResponse("No auto available nearby."));
     }
@@ -313,7 +318,8 @@ public class BookingService {
 
     private RideBookingResponse successResponse(String driverName, String driverPhone,
                                                 String vehicleNumber, double distanceKm,
-                                                double fare, double surge, Long rideId) {
+                                                double fare, double surge, Long rideId,
+                                                Double driverLat, Double driverLng) {
         RideBookingResponse r = new RideBookingResponse();
         r.setMessage("Ride booked successfully!");
         r.setDriverName(driverName);
@@ -325,6 +331,8 @@ public class BookingService {
         r.setSurgeMultiplier(surge);
         r.setStatus("IN_PROGRESS");
         r.setRideId(rideId);
+        r.setDriverLatitude(driverLat);
+        r.setDriverLongitude(driverLng);
         return r;
     }
 

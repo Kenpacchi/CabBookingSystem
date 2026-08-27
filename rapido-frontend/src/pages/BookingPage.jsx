@@ -153,25 +153,48 @@ async function searchPOI(q,lat,lng){
   }catch{return[]}
 }
 
-// ── Fake nearby drivers — only within 1 km from pickup ───────────────────────
-function generateNearbyDrivers(lat, lng) {
+// ── Nearby drivers — 100m radius, snapped to roads via OSRM ─────────────────
+// We generate candidate points around the pickup, then snap each one to
+// the nearest road using OSRM's nearest endpoint so drivers appear on roads.
+async function generateNearbyDriversOnRoad(lat, lng) {
   const types = [{ emoji:'🏍️', type:'BIKE' }, { emoji:'🛺', type:'AUTO' }, { emoji:'🚕', type:'CAB' }]
-  const names = ['Ravi','Suresh','Mohan','Arjun','Kumar','Sanjay','Raj','Ramesh','Vinay','Pawan']
-  return Array.from({ length: 12 }, (_, i) => {
-    // Scatter within ~0.008° ≈ 0.9 km radius
-    const dLat = (Math.random() - 0.5) * 0.016
-    const dLng = (Math.random() - 0.5) * 0.016
-    const dLat2 = lat + dLat
-    const dLng2 = lng + dLng
-    const dist = haversineKm(lat, lng, dLat2, dLng2)
+  const names = ['Ravi','Suresh','Mohan','Arjun','Kumar','Sanjay','Raj','Ramesh','Vinay']
+
+  // Place 9 candidate points evenly around the pickup within 50–100m
+  const candidates = Array.from({ length: 9 }, (_, i) => {
+    const angle  = (i / 9) * 2 * Math.PI
+    const radius = 0.0005 + (i % 3) * 0.0002  // 55m, 75m, 95m
     return {
-      id: i, lat: dLat2, lng: dLng2,
-      ...types[i % 3],
-      name: names[i % names.length],
-      rating: (4.2 + Math.random() * 0.7).toFixed(1),
-      distKm: dist,
+      rawLat: lat + radius * Math.cos(angle),
+      rawLng: lng + radius * Math.sin(angle),
+      index: i,
     }
-  }).filter(d => d.distKm <= 1.0) // ← only show if within 1km
+  })
+
+  // Snap each candidate to nearest road using OSRM /nearest
+  const snapped = await Promise.all(candidates.map(async (c) => {
+    try {
+      const url = `https://router.project-osrm.org/nearest/v1/driving/${c.rawLng},${c.rawLat}?number=1`
+      const r   = await fetch(url)
+      const d   = await r.json()
+      if (d.waypoints?.[0]?.location) {
+        const [sLng, sLat] = d.waypoints[0].location
+        return { ...c, lat: sLat, lng: sLng }
+      }
+    } catch {}
+    // Fallback: use raw point if OSRM fails
+    return { ...c, lat: c.rawLat, lng: c.rawLng }
+  }))
+
+  return snapped.map((d, i) => ({
+    id: i,
+    lat: d.lat,
+    lng: d.lng,
+    ...types[i % 3],
+    name: names[i % names.length],
+    rating: (4.2 + (i * 0.09) % 0.7).toFixed(1),
+    distKm: haversineKm(lat, lng, d.lat, d.lng),
+  })).filter(d => d.distKm <= 0.12) // keep within ~120m after snapping
 }
 
 // ── Map helpers ───────────────────────────────────────────────────────────────
@@ -189,6 +212,19 @@ function FitBounds({pickup,drop}){
     if(p&&d)map.fitBounds([[pickup.lat,pickup.lng],[drop.lat,drop.lng]],{padding:[80,80]})
     else if(p)map.setView([pickup.lat,pickup.lng],15)
   },[pickup,drop,map])
+  return null
+}
+
+// Re-fits map to pickup→drop when journey starts (driver arrived + 2s)
+function MapRefitOnRideStart({ pickup, drop, rideStarted }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!rideStarted || !pickup || !drop) return
+    map.fitBounds(
+      [[pickup.lat, pickup.lng], [drop.lat, drop.lng]],
+      { padding: [60, 60], animate: true, duration: 1.2 }
+    )
+  }, [rideStarted]) // eslint-disable-line react-hooks/exhaustive-deps
   return null
 }
 
@@ -523,6 +559,9 @@ export default function BookingPage() {
   const [etaMinutes, setEtaMinutes]               = useState(null) // ETA to destination in minutes
   const [rideOtp, setRideOtp]                     = useState(null) // 4-digit OTP per ride
   const [driverPos, setDriverPos]                 = useState(null) // animated driver marker {lat,lng}
+  const [driverRoutePoints, setDriverRoutePoints] = useState([])   // road path driver→pickup (live)
+  const [driverArrived, setDriverArrived]         = useState(false) // true once driver reaches pickup
+  const [rideStarted, setRideStarted]             = useState(false) // true once journey begins (after arrival)
   // ── Quick location shortcuts ──────────────────────────────────────────────
   const [quickLocs, setQuickLocs]         = useState([])
   const [showQuickLocs, setShowQuickLocs] = useState(true)
@@ -583,6 +622,9 @@ export default function BookingPage() {
       cancelStartedRef.current = false
       setCancelSecondsLeft(0)
       clearInterval(cancelTimerRef.current)
+      setDriverArrived(false)
+      setDriverRoutePoints([])
+      setRideStarted(false)
     }
   }, [stage]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -599,44 +641,194 @@ export default function BookingPage() {
     }
   }, [stage])
 
-  // ── Animate driver marker toward pickup during riding stage ──────────────
+  // ── Driver animation: runs ONCE per ride, stable across re-renders/refresh ─
+  // Guard ref ensures the effect body only executes once per rideId.
+  // Route + progress are persisted in localStorage keyed by rideId.
+  const animationStartedRef = useRef(false)
+
   useEffect(() => {
-    if (stage !== 'riding' || !pickup) return
+    if (stage !== 'riding' || !pickup || !rideInfo) return
 
-    // Start the driver ~500–900m away from pickup in a random direction
-    const angleDeg = Math.random() * 360
-    const angleRad = (angleDeg * Math.PI) / 180
-    const distLat  = 0.007 * Math.cos(angleRad)   // ~700m in lat degrees
-    const distLng  = 0.007 * Math.sin(angleRad)
-    let curLat = pickup.lat + distLat
-    let curLng = pickup.lng + distLng
+    // ── Guard: only start once per component lifecycle ───────────────────────
+    if (animationStartedRef.current) return
+    animationStartedRef.current = true
 
-    setDriverPos({ lat: curLat, lng: curLng })
+    const rideKey = `cabkaro_driver_anim_${rideInfo.rideId || 'ride'}`
 
-    const STEPS   = 80          // total steps to reach pickup
-    const JITTER  = 0.00008     // small random wobble per step (road-like feel)
-    let step = 0
+    const stored = (() => {
+      try { return JSON.parse(localStorage.getItem(rideKey) || 'null') } catch { return null }
+    })()
 
-    driverAnimRef.current = setInterval(() => {
-      step++
-      const t = step / STEPS                           // 0 → 1
-      const smooth = t < 0.5 ? 2*t*t : -1+(4-2*t)*t  // ease-in-out
-      const jLat = (Math.random() - 0.5) * JITTER
-      const jLng = (Math.random() - 0.5) * JITTER
-      const newLat = curLat + (pickup.lat - curLat) * (1 - (1 - smooth))
-      const newLng = curLng + (pickup.lng - curLng) * (1 - (1 - smooth))
-      curLat = newLat + jLat
-      curLng = newLng + jLng
-      setDriverPos({ lat: curLat, lng: curLng })
+    // Already arrived before refresh — restore final state immediately
+    if (stored?.arrived) {
+      const lastSaved = stored.route?.[stored.route.length - 1]
+      setDriverPos(lastSaved ? { lat: lastSaved.lat, lng: lastSaved.lng } : { lat: pickup.lat, lng: pickup.lng })
+      setDriverRoutePoints([])
+      setDriverArrived(true)
+      return
+    }
 
-      if (step >= STEPS) {
-        clearInterval(driverAnimRef.current)
-        setDriverPos({ lat: pickup.lat, lng: pickup.lng })
+    // ── Deterministic 700m start point based on pickup coords ────────────────
+    // Using a fixed angle derived from pickup lat so it's always the same
+    // for this pickup location — no randomness.
+    const DIST_DEG = 0.0063  // ~700m in degrees (~0.009° per km)
+    const fixedAngle = ((pickup.lat * 1000) % 360) * (Math.PI / 180)
+    const fixedStartLat = pickup.lat + DIST_DEG * Math.cos(fixedAngle)
+    const fixedStartLng = pickup.lng + DIST_DEG * Math.sin(fixedAngle)
+
+    const savedRoute = stored?.route  // [{lat, lng}] — saved on first fetch
+    const savedTick  = stored?.tick || 0
+
+    // ── Core animation function — runs on saved or freshly fetched route ─────
+    const runAnimation = (roadPoints) => {
+      // Compute total road distance once
+      let totalDistKm = 0
+      for (let i = 1; i < roadPoints.length; i++) {
+        totalDistKm += haversineKm(
+          roadPoints[i-1].lat, roadPoints[i-1].lng,
+          roadPoints[i].lat,   roadPoints[i].lng
+        )
       }
-    }, 400)  // update every 400ms → full journey in ~32s
+
+      const SPEED_KM_S = 25 / 3600  // 25 km/h city speed
+      const TICK_MS    = 500
+      const totalTicks = Math.max(20, Math.ceil((totalDistKm / SPEED_KM_S * 1000) / TICK_MS))
+
+      // Returns driver position and remaining route at a given tick.
+      // done=true only when driver has walked the full road distance to the
+      // last coordinate of the OSRM route (= exact pickup pin on road).
+      const lastPt = roadPoints[roadPoints.length - 1]
+      const getStateAtTick = (t) => {
+        const walkedKm   = Math.min(t * SPEED_KM_S * (TICK_MS / 1000), totalDistKm)
+        const atEnd      = walkedKm >= totalDistKm
+
+        if (atEnd) {
+          return { pos: lastPt, remaining: [], done: true }
+        }
+
+        let acc = 0
+        for (let i = 1; i < roadPoints.length; i++) {
+          const seg = haversineKm(
+            roadPoints[i-1].lat, roadPoints[i-1].lng,
+            roadPoints[i].lat,   roadPoints[i].lng
+          )
+          if (acc + seg >= walkedKm) {
+            const r = seg > 0 ? (walkedKm - acc) / seg : 0
+            const pos = {
+              lat: roadPoints[i-1].lat + (roadPoints[i].lat - roadPoints[i-1].lat) * r,
+              lng: roadPoints[i-1].lng + (roadPoints[i].lng - roadPoints[i-1].lng) * r,
+            }
+            // Remaining route: from current position to last OSRM point
+            const remaining = [
+              [pos.lat, pos.lng],
+              ...roadPoints.slice(i).map(p => [p.lat, p.lng]),
+            ]
+            return { pos, remaining, done: false }
+          }
+          acc += seg
+        }
+
+        // Fallback — snapped to last point
+        return { pos: lastPt, remaining: [], done: true }
+      }
+
+      // Show full remaining route from restored tick immediately
+      const { pos: initPos, remaining: initRemaining } = getStateAtTick(savedTick)
+      setDriverPos({ lat: initPos.lat, lng: initPos.lng })
+      setDriverRoutePoints(
+        savedTick === 0
+          ? roadPoints.map(p => [p.lat, p.lng])
+          : initRemaining
+      )
+
+      let tick = savedTick
+
+      driverAnimRef.current = setInterval(() => {
+        tick++
+        const { pos, remaining, done } = getStateAtTick(tick)
+
+        setDriverPos({ lat: pos.lat, lng: pos.lng })
+        setDriverRoutePoints(remaining)
+
+        // Save progress every 4 ticks (~2s) so refresh resumes close to here
+        if (tick % 4 === 0) {
+          try {
+            const cur = JSON.parse(localStorage.getItem(rideKey) || '{}')
+            localStorage.setItem(rideKey, JSON.stringify({ ...cur, tick }))
+          } catch {}
+        }
+
+        if (done) {
+          clearInterval(driverAnimRef.current)
+          // Snap to exact last coordinate of OSRM route (road-snapped pickup)
+          setDriverPos({ lat: lastPt.lat, lng: lastPt.lng })
+          setDriverRoutePoints([])
+          setDriverArrived(true)
+          try {
+            localStorage.setItem(rideKey, JSON.stringify({ arrived: true, route: roadPoints }))
+          } catch {}
+        }
+      }, TICK_MS)
+    }
+
+    if (savedRoute && savedRoute.length >= 2) {
+      // ── Refresh path: use exact saved route — no re-fetch, no re-spawn ──
+      runAnimation(savedRoute)
+    } else {
+      // ── First booking: fetch OSRM route from real driver location → pickup
+      const driverLat = (rideInfo.driverLatitude != null && !isNaN(Number(rideInfo.driverLatitude)))
+        ? Number(rideInfo.driverLatitude)
+        : fixedStartLat
+
+      const driverLng = (rideInfo.driverLongitude != null && !isNaN(Number(rideInfo.driverLongitude)))
+        ? Number(rideInfo.driverLongitude)
+        : fixedStartLng
+
+      ;(async () => {
+        let roadPoints = null
+        try {
+          const url = `https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${pickup.lng},${pickup.lat}?overview=full&geometries=geojson&steps=false`
+          const r    = await fetch(url)
+          const data = await r.json()
+          if (data.routes?.[0]?.geometry?.coordinates?.length > 1) {
+            roadPoints = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({ lat, lng }))
+          }
+        } catch {}
+
+        // Fallback: straight line
+        if (!roadPoints || roadPoints.length < 2) {
+          const steps = 30
+          roadPoints = Array.from({ length: steps + 1 }, (_, i) => ({
+            lat: driverLat + (pickup.lat - driverLat) * (i / steps),
+            lng: driverLng + (pickup.lng - driverLng) * (i / steps),
+          }))
+        }
+
+        // Save route keyed by rideId — this is the single source of truth
+        try {
+          localStorage.setItem(rideKey, JSON.stringify({ route: roadPoints, tick: 0, arrived: false }))
+        } catch {}
+
+        runAnimation(roadPoints)
+      })()
+    }
 
     return () => clearInterval(driverAnimRef.current)
-  }, [stage, pickup]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stage, pickup, rideInfo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset guard when ride ends so next booking can start fresh
+  useEffect(() => {
+    if (stage !== 'riding') {
+      animationStartedRef.current = false
+    }
+  }, [stage])
+
+  // ── Auto-start journey 2s after driver arrives ────────────────────────────
+  useEffect(() => {
+    if (!driverArrived) return
+    const t = setTimeout(() => setRideStarted(true), 2000)
+    return () => clearTimeout(t)
+  }, [driverArrived])
 
   // ── ETA fetch — Google Maps Routes API duration when both pins set ─────────
   // Runs on pickup/drop change (including during riding stage after restore)
@@ -778,14 +970,16 @@ export default function BookingPage() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Nearby drivers — only within 1km, filtered by selected vehicle ──────────
+  // ── Nearby drivers — snapped to roads, within 100m ───────────────────────
   useEffect(() => {
-    if (pickup && (stage === 'map' || stage === 'select')) {
-      const all = generateNearbyDrivers(pickup.lat, pickup.lng)
-      // If a vehicle type is pre-selected (from home page), show only that type
-      setNearbyDrivers(vehiclePreLocked ? all.filter(d => d.type === selectedVehicle) : all)
+    if (!pickup || !(stage === 'map' || stage === 'select')) {
+      setNearbyDrivers([])
+      return
     }
-  }, [pickup, selectedVehicle])
+    generateNearbyDriversOnRoad(pickup.lat, pickup.lng).then(drivers => {
+      setNearbyDrivers(vehiclePreLocked ? drivers.filter(d => d.type === selectedVehicle) : drivers)
+    })
+  }, [pickup, selectedVehicle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── POI search ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -924,7 +1118,7 @@ export default function BookingPage() {
       const newOtp = String(Math.floor(1000 + Math.random() * 9000))
       rideOtpRef.current = newOtp
 
-      // Persist to localStorage immediately
+      // Persist to localStorage immediately — clear any old driver route
       const bookedAt = Date.now()
       rideBookedAtRef.current = bookedAt
       saveRideToStorage({
@@ -935,6 +1129,9 @@ export default function BookingPage() {
         selectedVehicle, roadDistKm, routePoints,
         rideOtp: newOtp,
         rideBookedAt: bookedAt,
+        driverRoadRoute: null,   // will be fetched fresh by animation effect
+        driverTick: 0,
+        driverArrived: false,
       })
 
       setStage('riding')   // ← triggers countdown + OTP effects (refs already set)
@@ -958,6 +1155,9 @@ export default function BookingPage() {
     try {
       await rideApi.cancelRide(rideInfo.rideId)
       clearRideFromStorage()
+      // Clear per-ride animation key
+      try { localStorage.removeItem(`cabkaro_driver_anim_${rideInfo.rideId}`) } catch {}
+      animationStartedRef.current = false
       rideBookedAtRef.current = null
       rideOtpRef.current = null
       setCancelSecondsLeft(0)
@@ -1018,15 +1218,18 @@ export default function BookingPage() {
   if (stage === 'riding' && rideInfo) {
     const v = VEHICLES.find(v => v.type === selectedVehicle)
 
-    // Build a pulsing emoji icon for the driver's live position
+    // Clean driver icon — no blinking, just a styled vehicle marker
     const liveDriverIcon = new L.DivIcon({
-      html: `<div style="position:relative;display:inline-block">
-        <div style="position:absolute;inset:-6px;border-radius:50%;background:${v?.color || '#F59E0B'}22;
-          animation:driverPulse 1.4s ease-out infinite;"></div>
-        <div style="font-size:32px;line-height:1;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4));
-          position:relative;z-index:1">${v?.emoji || '🚗'}</div>
-      </div>`,
-      iconSize: [38, 38], iconAnchor: [19, 19], className: '',
+      html: `<div style="
+        background:${v?.color || '#F59E0B'};
+        border:3px solid #fff;
+        border-radius:50%;
+        width:36px;height:36px;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 3px 10px rgba(0,0,0,0.35);
+        font-size:18px;line-height:1;
+      ">${v?.emoji || '🚗'}</div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], className: '',
     })
 
     return (
@@ -1036,16 +1239,52 @@ export default function BookingPage() {
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'/>
             {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}><Popup>Pickup</Popup></Marker>}
             {drop    && <Marker position={[drop.lat,   drop.lng]}   icon={dropIcon}><Popup>Drop-off</Popup></Marker>}
-            {routePoints.length > 1 && <Polyline positions={routePoints} pathOptions={{color:'#1A202C',weight:5,opacity:0.85,dashArray:'8,4'}}/>}
-            {/* Live driver emoji marker — animates toward pickup */}
-            {driverPos && (
+
+            {/* Phase 1 — driver approaching: blue dashed shrinking line driver→pickup */}
+            {!driverArrived && driverRoutePoints.length > 1 && (
+              <Polyline
+                positions={driverRoutePoints}
+                pathOptions={{ color:'#2563EB', weight:5, opacity:0.85, dashArray:'10,6' }}
+              />
+            )}
+
+            {/* Phase 2 & 3 — driver arrived / journey started: green route pickup→drop */}
+            {driverArrived && routePoints.length > 1 && (
+              <Polyline
+                positions={routePoints}
+                pathOptions={{ color:'#059669', weight:5, opacity:0.9 }}
+              />
+            )}
+
+            {/* Driver marker — hidden once driver arrives */}
+            {!driverArrived && driverPos && (
               <Marker position={[driverPos.lat, driverPos.lng]} icon={liveDriverIcon}>
-                <Popup><b>{driverFound?.name}</b> · {v?.emoji} {v?.name}<br/>📍 Heading to your pickup</Popup>
+                <Popup>
+                  <b>{driverFound?.name}</b> · {v?.emoji} {v?.name}<br/>
+                  📍 Heading to your pickup
+                </Popup>
               </Marker>
             )}
-            {pickup && drop && <FitBounds pickup={pickup} drop={drop}/>}
+
+            {/* Re-fit map to full route when journey starts */}
+            <MapRefitOnRideStart pickup={pickup} drop={drop} rideStarted={rideStarted} />
+            {!rideStarted && pickup && drop && <FitBounds pickup={pickup} drop={drop}/>}
           </MapContainer>
-          <div style={SS.rideBadge}><span style={{color:'#059669',marginRight:6}}>●</span>RIDE IN PROGRESS</div>
+
+          {/* Status badge — 3 phases */}
+          {rideStarted ? (
+            <div style={{ ...SS.rideBadge, background:'rgba(5,150,105,0.95)', letterSpacing:0.5 }}>
+              <span style={{marginRight:6}}>🚗</span>JOURNEY IN PROGRESS
+            </div>
+          ) : driverArrived ? (
+            <div style={{ ...SS.rideBadge, background:'rgba(124,58,237,0.92)' }}>
+              <span style={{marginRight:6}}>✅</span>DRIVER AT PICKUP · STARTING RIDE…
+            </div>
+          ) : (
+            <div style={SS.rideBadge}>
+              <span style={{color:'#60A5FA',marginRight:6}}>●</span>DRIVER APPROACHING
+            </div>
+          )}
         </div>
 
         <div style={{...SS.driverCard, overflowY:'auto', maxHeight:'55vh'}}>
@@ -1053,9 +1292,15 @@ export default function BookingPage() {
             <div style={SS.driverAva}><v.Icon size={26} color={v.color}/></div>
             <div style={{flex:1}}>
               <div style={SS.driverName}>{driverFound?.name}</div>
-              <div style={{display:'flex',gap:8}}>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <span style={SS.starBadge}>⭐ {driverFound?.rating}</span>
                 <span style={SS.plateBadge}>{driverFound?.vehicle}</span>
+                {rideStarted
+                  ? <span style={{fontSize:11,fontWeight:700,color:'#059669',background:'#D1FAE5',borderRadius:20,padding:'2px 8px'}}>Ride started</span>
+                  : driverArrived
+                  ? <span style={{fontSize:11,fontWeight:700,color:'#7C3AED',background:'#EDE9FE',borderRadius:20,padding:'2px 8px'}}>At pickup</span>
+                  : <span style={{fontSize:11,fontWeight:600,color:'#2563EB',background:'#DBEAFE',borderRadius:20,padding:'2px 8px'}}>On the way</span>
+                }
               </div>
             </div>
             {/* ℹ️ Driver Info button */}
@@ -1201,7 +1446,13 @@ export default function BookingPage() {
             )}
             <button style={SS.chatBtn} onClick={() => setShowChat(true)}>💬 Chat</button>
             <button style={SS.payNowBtn} onClick={() => setShowPayment(true)}>💳 Pay</button>
-            <button style={SS.doneBtn} onClick={() => { clearRideFromStorage(); rideBookedAtRef.current = null; setStage('rating') }}>✓ Done</button>
+            <button style={SS.doneBtn} onClick={() => {
+              clearRideFromStorage()
+              try { localStorage.removeItem(`cabkaro_driver_anim_${rideInfo?.rideId}`) } catch {}
+              animationStartedRef.current = false
+              rideBookedAtRef.current = null
+              setStage('rating')
+            }}>✓ Done</button>
           </div>
         </div>
 
@@ -1311,10 +1562,10 @@ export default function BookingPage() {
             {poiMarkers.length} {poi}(s) found nearby
           </div>
         )}
-        {/* 1km driver notice */}
+        {/* 100m driver notice */}
         {!drop && pickup && nearbyDrivers.length > 0 && (
           <div style={SS.nearbyBadge}>
-            🚗 {nearbyDrivers.length} drivers within 1km
+            🚗 {nearbyDrivers.length} drivers within 100m
           </div>
         )}
         <button style={SS.backBtn} onClick={() => navigate('/')}>
