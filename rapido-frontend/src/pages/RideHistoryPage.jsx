@@ -6,6 +6,7 @@ import {
   IconClose, IconRoute, IconLocationPin, IconClock,
   IconSurge, IconBolt,
 } from '../components/icons.jsx'
+import ReportProblemModal from '../components/ReportProblemModal.jsx'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -329,61 +330,96 @@ export default function RideHistoryPage() {
   )
 }
 
-// ── Past ride card (existing design, unchanged) ───────────────────────────────
+// ── Past ride card ────────────────────────────────────────────────────────────
 
 function PastRideCard({ ride }) {
   const statusStyle = getStatusStyle(ride.status)
   const pickupText = truncate(ride.pickupAddress  || `${ride.pickupLat?.toFixed(4)}, ${ride.pickupLng?.toFixed(4)}`, 35)
   const dropText   = truncate(ride.dropAddress    || `${ride.dropLat?.toFixed(4)}, ${ride.dropLng?.toFixed(4)}`,   35)
 
+  const [showReport, setShowReport]   = useState(false)
+  const [reported, setReported]       = useState(false)
+
+  // Only show Report button on COMPLETED rides
+  const isCompleted = ride.status === 'COMPLETED'
+
   return (
-    <div style={styles.rideCard}>
-      <div style={styles.cardTop}>
-        <div style={styles.vehicleBadge}>
-          <VehicleIcon type={ride.vehicleType} size={26} />
-          <span style={styles.vehicleTypeLbl}>{ride.vehicleType}</span>
+    <>
+      <div style={styles.rideCard}>
+        <div style={styles.cardTop}>
+          <div style={styles.vehicleBadge}>
+            <VehicleIcon type={ride.vehicleType} size={26} />
+            <span style={styles.vehicleTypeLbl}>{ride.vehicleType}</span>
+          </div>
+          <div style={styles.routeBlock}>
+            <div style={styles.routeRow}><span style={styles.greenDot} /><span style={styles.routeText}>{pickupText}</span></div>
+            <div style={styles.routeConnector}><div style={styles.routeLine} /><span style={styles.arrowText}>↓</span><div style={styles.routeLine} /></div>
+            <div style={styles.routeRow}><span style={styles.redDot} /><span style={styles.routeText}>{dropText}</span></div>
+          </div>
+          <div style={{ ...styles.statusBadge, background: statusStyle.background, color: statusStyle.color }}>
+            {statusStyle.label}
+          </div>
         </div>
-        <div style={styles.routeBlock}>
-          <div style={styles.routeRow}><span style={styles.greenDot} /><span style={styles.routeText}>{pickupText}</span></div>
-          <div style={styles.routeConnector}><div style={styles.routeLine} /><span style={styles.arrowText}>↓</span><div style={styles.routeLine} /></div>
-          <div style={styles.routeRow}><span style={styles.redDot} /><span style={styles.routeText}>{dropText}</span></div>
-        </div>
-        <div style={{ ...styles.statusBadge, background: statusStyle.background, color: statusStyle.color }}>
-          {statusStyle.label}
-        </div>
-      </div>
 
-      <div style={styles.divider} />
+        <div style={styles.divider} />
 
-      <div style={styles.cardBottom}>
-        <div>
-          <span style={styles.fareAmt}>₹{ride.fare}</span>
-          {ride.surgeMultiplier > 1 && (
-            <span style={styles.surgeBadge}>
-              <IconSurge size={10} color="#EA580C" /> {ride.surgeMultiplier}×
-            </span>
-          )}
-        </div>
-        <div style={styles.metaRight}>
-          {ride.distanceKm != null && (
+        <div style={styles.cardBottom}>
+          <div>
+            <span style={styles.fareAmt}>₹{ride.fare}</span>
+            {ride.surgeMultiplier > 1 && (
+              <span style={styles.surgeBadge}>
+                <IconSurge size={10} color="#EA580C" /> {ride.surgeMultiplier}×
+              </span>
+            )}
+          </div>
+          <div style={styles.metaRight}>
+            {ride.distanceKm != null && (
+              <span style={styles.metaChip}>
+                <IconLocationPin size={10} color="#A0AEC0" /> {ride.distanceKm} km
+              </span>
+            )}
             <span style={styles.metaChip}>
-              <IconLocationPin size={10} color="#A0AEC0" /> {ride.distanceKm} km
+              <IconClock size={10} color="#A0AEC0" /> {formatDate(ride.bookedAt)}
             </span>
-          )}
-          <span style={styles.metaChip}>
-            <IconClock size={10} color="#A0AEC0" /> {formatDate(ride.bookedAt)}
-          </span>
+          </div>
         </div>
+
+        {ride.driverName && (
+          <div style={styles.driverRow}>
+            <span style={styles.driverAvatar}>{ride.driverName[0]?.toUpperCase()}</span>
+            <span style={styles.driverNameText}>{ride.driverName}</span>
+            {ride.vehicleNumber && <span style={styles.vehicleNumber}>{ride.vehicleNumber}</span>}
+          </div>
+        )}
+
+        {/* ── Report a Problem button (only for COMPLETED rides) ── */}
+        {isCompleted && (
+          <div style={styles.reportRow}>
+            {reported ? (
+              <div style={styles.reportedBadge}>
+                ✅ Problem reported · Our team will respond soon
+              </div>
+            ) : (
+              <button
+                style={styles.reportBtn}
+                onClick={() => setShowReport(true)}
+              >
+                🚩 Report a Problem
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {ride.driverName && (
-        <div style={styles.driverRow}>
-          <span style={styles.driverAvatar}>{ride.driverName[0]?.toUpperCase()}</span>
-          <span style={styles.driverNameText}>{ride.driverName}</span>
-          {ride.vehicleNumber && <span style={styles.vehicleNumber}>{ride.vehicleNumber}</span>}
-        </div>
+      {/* Report modal */}
+      {showReport && (
+        <ReportProblemModal
+          ride={ride}
+          onClose={() => setShowReport(false)}
+          onSuccess={() => { setShowReport(false); setReported(true) }}
+        />
       )}
-    </div>
+    </>
   )
 }
 
@@ -568,4 +604,19 @@ const styles = {
   emptyText:   { fontSize: 14, color: '#718096', lineHeight: 1.5, marginBottom: 28 },
   bookBtn:     { background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: '#fff', border: 'none', borderRadius: 14, padding: '14px 28px', fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', boxShadow: '0 4px 16px rgba(245,158,11,0.3)' },
   retryBtn:    { background: 'transparent', color: '#F59E0B', border: '1.5px solid #FCD34D', borderRadius: 14, padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'inline-block' },
+
+  // ── Report a Problem ──────────────────────────────────────────────────────
+  reportRow:    { paddingTop: 12, borderTop: '1px dashed #E2E8F0', marginTop: 8 },
+  reportBtn: {
+    width: '100%', background: 'transparent',
+    border: '1.5px solid #FECACA', color: '#DC2626',
+    borderRadius: 10, padding: '9px 14px', fontSize: 12,
+    fontWeight: 700, cursor: 'pointer', textAlign: 'center',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  reportedBadge: {
+    width: '100%', background: '#F0FDF4', border: '1px solid #BBF7D0',
+    borderRadius: 10, padding: '9px 14px', fontSize: 12,
+    color: '#059669', fontWeight: 600, textAlign: 'center',
+  },
 }

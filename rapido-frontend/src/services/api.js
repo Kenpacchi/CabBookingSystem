@@ -107,6 +107,15 @@ export const rideApi = {
     api.get(`/ride/nearby/${vehicleType}`),
 
   getRideHistory: () => api.get('/ride/history'),
+
+  /**
+   * Submit a problem report for a completed ride.
+   * @param {{ rideId, category, description, driverName, vehicleNumber }} data
+   */
+  reportProblem: (data) => api.post('/ride/report', data),
+
+  /** Get all reports submitted by the logged-in user */
+  getMyReports: () => api.get('/ride/reports'),
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
